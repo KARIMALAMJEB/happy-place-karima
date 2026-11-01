@@ -1,10 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, Lock, Send, Upload, Users } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { Building2, Clock, FileText, Lock, Send, Trash2, TriangleAlert, Upload, Users, type LucideIcon } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
-import { HpButton } from "@/components/hp/button";
-import { Encadre } from "@/components/hp/encadre";
+import { HpButton, HpIconButton } from "@/components/hp/button";
+import { RichTextEditor } from "@/components/hp/rich-text";
 import { HpPage, useOwnProfile } from "@/components/hp/page";
 import { ReglesArbitrage } from "@/components/hp/regles";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,11 +24,25 @@ function Erreur({ children }: { children?: string }) {
   return children ? <p role="alert" className="text-[12px] leading-4 font-semibold text-[#8E1A1F]">{children}</p> : null;
 }
 
-function Choix<T extends string>({ nom, valeur, options, onChange }: {
+function Bloc({ titre, children }: { titre: string; children: ReactNode }) {
+  return (
+    <section className="flex flex-col gap-5 border border-line bg-white p-6">
+      <h2 className="text-[22px] leading-7">{titre}</h2>
+      {children}
+    </section>
+  );
+}
+
+const Compteur = ({ n, max }: { n: number; max: number }) => <span className="text-[12px] leading-4 text-ink-2">{n} / {max} caractères</span>;
+const LIEN = "inline-flex h-11 items-center px-1 text-[14px] leading-5 font-semibold whitespace-nowrap text-anthracite underline underline-offset-4 hover:text-ink cursor-pointer";
+
+// Choix exclusif en cartes (radio natif, libellé + phrase d'aide)
+function Choix<T extends string>({ nom, valeur, options, onChange, erreur }: {
   nom: string;
   valeur: T | null;
   onChange: (v: T) => void;
-  options: { valeur: T; label: string; aide: string }[];
+  erreur?: boolean;
+  options: { valeur: T; label: string; aide: string; icon: LucideIcon }[];
 }) {
   return (
     <div className="flex flex-col gap-2">
@@ -37,19 +51,15 @@ function Choix<T extends string>({ nom, valeur, options, onChange }: {
           key={o.valeur}
           className={cn(
             "flex min-h-11 cursor-pointer items-start gap-3 border px-4 py-3 hover:bg-neutral-1",
-            valeur === o.valeur ? "border-anthracite bg-neutral-1" : "border-line",
+            valeur === o.valeur ? "border-anthracite bg-neutral-1" : erreur ? "border-anthracite" : "border-line",
           )}
         >
-          <input
-            type="radio"
-            name={nom}
-            value={o.valeur}
-            checked={valeur === o.valeur}
-            onChange={() => onChange(o.valeur)}
-            className="mt-0.5 size-5 shrink-0 accent-anthracite"
-          />
+          <input type="radio" name={nom} value={o.valeur} checked={valeur === o.valeur} onChange={() => onChange(o.valeur)} className="mt-0.5 size-5 shrink-0 accent-anthracite" />
           <span className="flex flex-col gap-1">
-            <span className="text-[14px] leading-5 font-semibold">{o.label}</span>
+            <span className="flex items-center gap-2 text-[14px] leading-5 font-semibold">
+              <o.icon size={16} aria-hidden />
+              {o.label}
+            </span>
             <span className="text-[12px] leading-4 text-ink-2">{o.aide}</span>
           </span>
         </label>
@@ -57,6 +67,8 @@ function Choix<T extends string>({ nom, valeur, options, onChange }: {
     </div>
   );
 }
+
+const taille = (o: number) => (o < 1024 * 1024 ? `${Math.max(1, Math.round(o / 1024))} Ko` : `${(o / 1024 / 1024).toFixed(1).replace(".", ",")} Mo`);
 
 function DeposerPage() {
   const navigate = useNavigate();
@@ -149,187 +161,211 @@ function DeposerPage() {
   function valider(e: React.FormEvent) {
     e.preventDefault();
     const err: Record<string, string> = {};
-    if (titre.trim().length < 3) err.titre = "Le titre doit faire au moins 3 caractères.";
-    if (description.trim().length < 5) err.description = "Décris ta demande en 5 caractères minimum.";
-    if (!bloquante) err.bloquante = "Indique si ta demande est bloquante.";
-    if (!destinataire) err.destinataire = "Choisis qui doit répondre à ta demande.";
-    if (!visibilite) err.visibilite = "Choisis qui peut voir ta demande.";
+    if (titre.trim().length < 3) err.titre = "Indique un titre.";
+    if (description.trim().length < 5) err.description = "Décris ta demande.";
+    if (!bloquante) err.bloquante = "Choisis la nature de ta demande.";
+    if (!destinataire) err.destinataire = "Choisis qui valide cette demande.";
+    if (!visibilite) err.visibilite = "Choisis qui peut voir cette demande.";
     if (role === "manager" && !(equipe || equipes.data?.length)) err.equipe = "Choisis une de tes équipes.";
     setErreurs(err);
     if (Object.keys(err).length) return;
     envoi.mutate();
   }
 
+  const [survol, setSurvol] = useState(false);
+  const ajouterPdf = (liste: FileList | null) => {
+    const f = liste?.[0];
+    if (!f) return;
+    if (f.type !== "application/pdf" && !f.name.toLowerCase().endsWith(".pdf")) return setErreurs({ ...erreurs, fichier: `« ${f.name} » refusé : seuls les fichiers PDF sont acceptés.` });
+    if (f.size > MAX_PDF_BYTES) return setErreurs({ ...erreurs, fichier: `« ${f.name} » refusé : il dépasse 20 Mo.` });
+    const { fichier: _f, ...reste } = erreurs;
+    setErreurs(reste);
+    setFichier(f);
+  };
+  const [message, setMessage] = useState("");
+  const enregistrerBrouillon = () => {
+    try { localStorage.setItem(cle, JSON.stringify({ titre, description, bloquante, destinataire, theme, visibilite, confidentielle })); } catch { /* ignoré */ }
+    setMessage(`Brouillon enregistré à ${new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}.`);
+  };
+  const nomValideur = destinataire === "admin" ? "L'administration" : destinataire === "manager" ? "Ton manager" : undefined;
+
   return (
     <HpPage>
-      <section className="flex flex-col gap-2 border border-line bg-white px-6 py-6 lg:px-8">
-        <p className="text-[14px] leading-5 text-ink-2">
-          <Link to="/demandes" className="underline underline-offset-4 hover:text-ink">Demandes</Link> · Nouvelle demande
-        </p>
-        <h1 className="self-start border-b-[3px] border-line pb-1 text-[28px] leading-9 lg:text-[36px] lg:leading-[44px]">
-          Déposer une demande
-        </h1>
-      </section>
-
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
-      <form onSubmit={valider} noValidate className="flex flex-col gap-6">
-        {repris && (
-          <p role="status" className="flex flex-wrap items-center justify-between gap-3 border border-line bg-neutral-1 px-4 py-3 text-[14px] leading-5">
-            <span>Brouillon repris : ton texte est enregistré automatiquement sur cet appareil.</span>
-            <button type="button" onClick={effacerBrouillon} className="underline underline-offset-4 hover:text-ink">Effacer le brouillon</button>
+      <div className="flex flex-col gap-6">
+        <header className="flex flex-col gap-2 border border-line bg-white px-8 py-6">
+          <nav aria-label="Fil d'Ariane" className="flex items-center gap-2 text-[14px] leading-5">
+            <Link to="/demandes" className="inline-flex min-h-6 items-center text-ink-2 underline underline-offset-2 hover:text-ink">Mes demandes</Link>
+            <span aria-hidden className="text-ink-2">/</span>
+            <span aria-current="page" className="font-semibold">Déposer une demande</span>
+          </nav>
+          <h1 className="text-[36px] leading-[44px]">Déposer une demande</h1>
+          <p className="text-[16px] leading-6">
+            Demande au nom de <span className="font-semibold">{fullName}</span>{role === "admin" ? " · Admin" : ""}
           </p>
-        )}
-        <Encadre title="Ta demande">
-          <div className="flex flex-col gap-5 p-6">
-            <div className="flex flex-col gap-2">
-              <label htmlFor="titre" className="label text-ink">Titre</label>
-              <input id="titre" className={champ} value={titre} maxLength={MAX_TITRE} onChange={(e) => setTitre(e.target.value)} />
-              <span className="text-[12px] leading-4 text-ink-2">{titre.length} / {MAX_TITRE} caractères</span>
-              <Erreur>{erreurs.titre}</Erreur>
-            </div>
-            <div className="flex flex-col gap-2">
-              <label htmlFor="description" className="label text-ink">Description</label>
-              <textarea
-                id="description"
-                className={cn(champ, "min-h-40 py-2")}
-                value={description}
-                maxLength={MAX_DESCRIPTION}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-              <span className="text-[12px] leading-4 text-ink-2">{description.length} / {MAX_DESCRIPTION} caractères</span>
-              <Erreur>{erreurs.description}</Erreur>
-            </div>
-            <div className="flex flex-col gap-2">
-              <label htmlFor="theme" className="label text-ink">Thème (facultatif)</label>
-              <select id="theme" className={champ} value={theme} onChange={(e) => setTheme(e.target.value as Theme | "")}>
-                <option value="">Aucun thème</option>
-                {THEMES.map((t) => <option key={t} value={t}>{t}</option>)}
-              </select>
-            </div>
-          </div>
-        </Encadre>
+        </header>
 
-        <Encadre title="Nature de la demande">
-          <div className="flex flex-col gap-2 p-6">
-            <Choix
-              nom="bloquante"
-              valeur={bloquante}
-              onChange={setBloquante}
-              options={[
-                { valeur: "oui", label: "Bloquante", aide: "Tu ne peux pas poursuivre ton travail tant qu'elle n'est pas traitée. Après validation, un suivi s'ouvre (Ouvert, En cours, Résolu)." },
-                { valeur: "non", label: "Non bloquante", aide: "Tu peux continuer à travailler en attendant." },
-              ]}
-            />
-            <Erreur>{erreurs.bloquante}</Erreur>
-          </div>
-        </Encadre>
-
-        <Encadre title="Qui répond à ta demande ?">
-          <div className="flex flex-col gap-2 p-6">
-            {role === "admin" ? (
-              <p className="text-[14px] leading-5">En tant qu'admin, ta demande est traitée par l'administration.</p>
-            ) : (
-              <Choix
-                nom="destinataire"
-                valeur={destinataire}
-                onChange={setDestinataire}
-                options={[
-                  { valeur: "manager", label: "Mon manager", aide: "Sujet opérationnel de ton équipe." },
-                  { valeur: "admin", label: "L'administration", aide: "Sujet lié au fonctionnement de l'entreprise (cantine, outils, conditions de travail)." },
-                ]}
-              />
-            )}
-            <Erreur>{erreurs.destinataire}</Erreur>
-            {role === "manager" && (
-              <div className="mt-3 flex flex-col gap-2">
-                <label htmlFor="equipe" className="label text-ink">Équipe concernée</label>
-                <select id="equipe" className={champ} value={equipe} onChange={(e) => setEquipe(e.target.value)}>
-                  <option value="">Choisir une équipe</option>
-                  {(equipes.data ?? []).map((t) => <option key={t} value={t}>{t}</option>)}
-                </select>
-                <Erreur>{erreurs.equipe}</Erreur>
-              </div>
-            )}
-          </div>
-        </Encadre>
-
-        <Encadre title="Qui peut voir ta demande ?">
-          <div className="flex flex-col gap-3 p-6">
-            <Choix
-              nom="visibilite"
-              valeur={visibilite}
-              onChange={setVisibilite}
-              options={[
-                { valeur: "tous", label: VISIBILITY_LABEL.tous, aide: "Une fois validée, tous les collaborateurs la lisent (hors identité confidentielle)." },
-                { valeur: "equipe", label: VISIBILITY_LABEL.equipe, aide: "Une fois validée, seuls les membres de ton équipe la lisent." },
-                { valeur: "manager", label: VISIBILITY_LABEL.manager, aide: "Seuls toi, ton manager et l'administration la lisent." },
-              ]}
-            />
-            <Erreur>{erreurs.visibilite}</Erreur>
-            <label className="flex min-h-11 cursor-pointer items-start gap-3 border border-line px-4 py-3 hover:bg-neutral-1">
-              <input
-                type="checkbox"
-                checked={confidentielle}
-                onChange={(e) => setConfidentielle(e.target.checked)}
-                className="mt-0.5 size-5 shrink-0 accent-anthracite"
-              />
-              <span className="flex flex-col gap-1">
-                <span className="flex items-center gap-2 text-[14px] leading-5 font-semibold"><Lock size={16} aria-hidden /> Identité confidentielle</span>
-                <span className="text-[12px] leading-4 text-ink-2">
-                  Les autres lecteurs verront « Auteur confidentiel ». Seul le valideur connaît ton nom et doit le garder confidentiel.
-                </span>
-              </span>
-            </label>
-          </div>
-        </Encadre>
-
-        <Encadre title="Document (facultatif)">
-          <div className="flex flex-col gap-3 p-6">
-            <label className="flex cursor-pointer flex-col items-center gap-2 border border-dashed border-field bg-neutral-1 px-6 py-6 text-center hover:bg-neutral-2">
-              <Upload size={20} aria-hidden />
-              <span className="text-[14px] leading-5">
-                <span className="font-semibold underline underline-offset-4">Parcourir tes dossiers</span> pour joindre un PDF
-              </span>
-              <span className="text-[12px] leading-4 text-ink-2">PDF uniquement · 20 Mo maximum</span>
-              <input
-                type="file"
-                accept="application/pdf,.pdf"
-                className="sr-only"
-                onChange={(e) => {
-                  const f = e.target.files?.[0] ?? null;
-                  e.target.value = "";
-                  if (!f) return;
-                  if (f.type !== "application/pdf" && !f.name.toLowerCase().endsWith(".pdf")) return setErreurs({ ...erreurs, fichier: "Seuls les fichiers PDF sont acceptés." });
-                  if (f.size > MAX_PDF_BYTES) return setErreurs({ ...erreurs, fichier: "Le fichier dépasse 20 Mo." });
-                  const { fichier: _f, ...reste } = erreurs;
-                  setErreurs(reste);
-                  setFichier(f);
-                }}
-              />
-            </label>
-            <Erreur>{erreurs.fichier}</Erreur>
-            {fichier && (
-              <p className="flex items-center justify-between gap-3 border border-line px-4 py-2 text-[14px] leading-5">
-                <span className="truncate">{fichier.name}</span>
-                <button type="button" onClick={() => setFichier(null)} className="underline underline-offset-4 hover:text-ink">Retirer</button>
+        <form onSubmit={valider} noValidate className="grid items-start gap-6 lg:grid-cols-3">
+          <div className="flex flex-col gap-6 lg:col-span-2">
+            {repris && (
+              <p role="status" className="flex flex-wrap items-center justify-between gap-3 border border-line border-l-4 border-l-anthracite bg-neutral-1 px-4 py-3 text-[14px] leading-5">
+                <span>Brouillon repris : ton texte est enregistré automatiquement sur cet appareil.</span>
+                <button type="button" onClick={effacerBrouillon} className={LIEN}>Effacer le brouillon</button>
               </p>
             )}
-          </div>
-        </Encadre>
+            <Bloc titre="Ta demande">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-baseline justify-between gap-4">
+                  <label htmlFor="titre" className="label text-ink">Titre *</label>
+                  <Compteur n={titre.length} max={MAX_TITRE} />
+                </div>
+                <input id="titre" className={champ} value={titre} maxLength={MAX_TITRE} aria-invalid={!!erreurs.titre} onChange={(e) => setTitre(e.target.value)} />
+                <Erreur>{erreurs.titre}</Erreur>
+              </div>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-baseline justify-between gap-4">
+                  <label htmlFor="description" className="label text-ink">Description *</label>
+                  <Compteur n={description.length} max={MAX_DESCRIPTION} />
+                </div>
+                <RichTextEditor id="description" rows={5} maxLength={MAX_DESCRIPTION} value={description} onChange={setDescription} invalide={!!erreurs.description} />
+                <Erreur>{erreurs.description}</Erreur>
+              </div>
+              <div className="grid grid-cols-2 gap-6">
+                <fieldset className="col-span-2 flex flex-col gap-2">
+                  <legend className="label mb-2 text-ink">Nature <span aria-hidden>*</span><span className="sr-only">(obligatoire)</span></legend>
+                  <div role="radiogroup" aria-required="true" aria-invalid={!!erreurs.bloquante} className="grid grid-cols-2 gap-3">
+                    {([
+                      { v: "oui" as const, l: "BLOQUANTE", aide: "Tu ne peux pas poursuivre ton travail tant qu'elle n'est pas traitée. Après validation, un suivi s'ouvre (Ouvert, En cours, Résolu).", icone: TriangleAlert },
+                      { v: "non" as const, l: "NON BLOQUANTE", aide: "Tu peux continuer à travailler en attendant.", icone: Clock },
+                    ]).map(({ v, l, aide, icone: Icone }) => (
+                      <label key={v} className={cn("flex min-h-11 cursor-pointer items-start gap-3 border px-4 py-3 hover:bg-neutral-1", bloquante === v ? "border-anthracite bg-neutral-1" : erreurs.bloquante ? "border-anthracite" : "border-line")}>
+                        <input type="radio" name="bloquante" checked={bloquante === v} onChange={() => setBloquante(v)} aria-required="true" className="mt-0.5 size-5 shrink-0 accent-anthracite" />
+                        <span className="flex flex-col gap-1">
+                          <span className="label flex items-center gap-2 text-anthracite"><Icone size={16} aria-hidden />{l}</span>
+                          <span className="text-[12px] leading-4 text-ink-2">{aide}</span>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-[12px] leading-4 text-ink-2">* Obligatoire : choisis la nature de ta demande.</p>
+                  <Erreur>{erreurs.bloquante}</Erreur>
+                </fieldset>
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="theme" className="label text-ink">Thème (facultatif)</label>
+                  <select id="theme" className={champ} value={theme} onChange={(e) => setTheme(e.target.value as Theme | "")}>
+                    <option value="">Aucun</option>
+                    {THEMES.map((t) => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+              </div>
+            </Bloc>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <HpButton type="submit" role="publie" icon={Send} disabled={envoi.isPending}>
-            {envoi.isPending ? "ENVOI EN COURS…" : "ENVOYER LA DEMANDE"}
-          </HpButton>
-          <Link to="/demandes" className="label-13 inline-flex h-11 items-center border-[1.5px] border-field bg-white px-4 text-anthracite hover:bg-neutral-1">
-            ANNULER
-          </Link>
-        </div>
-        <p className="flex items-center gap-2 text-[12px] leading-4 text-ink-2">
-          <Building2 size={14} aria-hidden /> <Users size={14} aria-hidden /> Tu seras prévenu(e) par e-mail dès que ta demande reçoit une réponse.
-        </p>
-      </form>
-      <ReglesArbitrage />
+            <Bloc titre="Qui peut voir cette demande ? *">
+              <Choix
+                nom="visibilite"
+                valeur={visibilite}
+                erreur={!!erreurs.visibilite}
+                onChange={setVisibilite}
+                options={[
+                  { valeur: "tous", label: "Tous", aide: "Une fois validée, tous les salariés la lisent (hors identité confidentielle).", icon: Building2 },
+                  { valeur: "equipe", label: "Mon équipe", aide: "Une fois validée, seuls les membres de ton équipe la lisent.", icon: Users },
+                  { valeur: "manager", label: "Mon manager uniquement", aide: "Seuls toi, ton manager et l'administration la lisent.", icon: Lock },
+                ]}
+              />
+              <Erreur>{erreurs.visibilite}</Erreur>
+              <p className="bg-neutral-1 px-4 py-3 text-[14px] leading-5 font-semibold">Tu ne pourras plus modifier la visibilité après l'envoi.</p>
+            </Bloc>
+
+            <Bloc titre="Qui valide cette demande ? *">
+              {role === "admin" ? (
+                <p className="text-[14px] leading-5">En tant qu'admin, ta demande est traitée par l'administration.</p>
+              ) : (
+                <Choix
+                  nom="destinataire"
+                  valeur={destinataire}
+                  erreur={!!erreurs.destinataire}
+                  onChange={setDestinataire}
+                  options={[
+                    { valeur: "manager", label: "Mon manager", aide: "Pour un sujet de travail au quotidien.", icon: Users },
+                    { valeur: "admin", label: "L'admin", aide: "Pour un sujet de fonctionnement de l'entreprise (cantine, outils, conditions de travail).", icon: Building2 },
+                  ]}
+                />
+              )}
+              <Erreur>{erreurs.destinataire}</Erreur>
+              {role === "manager" && (
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="equipe" className="label text-ink">Équipe concernée *</label>
+                  <select id="equipe" className={champ} value={equipe} onChange={(e) => setEquipe(e.target.value)}>
+                    <option value="">Choisir une équipe</option>
+                    {(equipes.data ?? []).map((t) => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                  <Erreur>{erreurs.equipe}</Erreur>
+                </div>
+              )}
+              <label className="flex min-h-11 cursor-pointer items-start gap-3 border border-line px-4 py-3 hover:bg-neutral-1">
+                <input type="checkbox" checked={confidentielle} onChange={(e) => setConfidentielle(e.target.checked)} className="mt-0.5 size-5 shrink-0 accent-anthracite" />
+                <span className="flex flex-col gap-1">
+                  <span className="text-[14px] leading-5 font-semibold">Identité confidentielle</span>
+                  <span className="text-[12px] leading-4 text-ink-2">
+                    Les autres lecteurs voient « Auteur confidentiel ». Seule la personne qui décide voit ton nom et elle est tenue à la confidentialité. Tu reçois toujours la réponse par e-mail.
+                  </span>
+                </span>
+              </label>
+            </Bloc>
+
+            <Bloc titre="Pièces jointes (facultatif)">
+              <div className="flex flex-col gap-3">
+                {fichier ? (
+                  <p className="bg-neutral-1 px-4 py-3 text-[14px] leading-5">1 fichier rattaché : retire-le pour en ajouter un autre.</p>
+                ) : (
+                  <label
+                    onDragOver={(e) => { e.preventDefault(); setSurvol(true); }}
+                    onDragLeave={() => setSurvol(false)}
+                    onDrop={(e) => { e.preventDefault(); setSurvol(false); ajouterPdf(e.dataTransfer.files); }}
+                    className={cn("flex cursor-pointer flex-col items-center gap-2 border border-dashed border-field px-6 py-6 text-center", survol ? "bg-neutral-2" : "bg-neutral-1 hover:bg-neutral-2")}
+                  >
+                    <Upload size={20} aria-hidden />
+                    <span className="text-[14px] leading-5">Glisse ton fichier ici ou <span className="font-semibold underline underline-offset-4">parcours tes dossiers</span></span>
+                    <span className="text-[12px] leading-4 text-ink-2">PDF uniquement · 20 Mo maximum</span>
+                    <input type="file" accept="application/pdf,.pdf" className="sr-only" onChange={(e) => { ajouterPdf(e.target.files); e.target.value = ""; }} />
+                  </label>
+                )}
+                <Erreur>{erreurs.fichier}</Erreur>
+                {fichier && (
+                  <div className="flex flex-col gap-2">
+                    <h3 className="label text-ink">Documents rattachés</h3>
+                    <ul className="flex flex-col border border-line">
+                      <li className="flex items-center gap-3 px-4 py-1">
+                        <FileText size={16} aria-hidden className="text-ink-2" />
+                        <span className="min-w-0 flex-1 truncate text-[14px] leading-5">{fichier.name}</span>
+                        <span className="text-[12px] leading-4 text-ink-2">{taille(fichier.size)}</span>
+                        <HpIconButton icon={Trash2} label={`Retirer ${fichier.name}`} className="border-0" onClick={() => setFichier(null)} />
+                      </li>
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </Bloc>
+
+            <div className="flex items-center justify-end gap-4 border border-line bg-white p-6">
+              <span role="status" className="mr-auto text-[12px] leading-4 text-ink-2">{message}</span>
+              <Link to="/demandes" className={LIEN}>Annuler</Link>
+              <button type="button" onClick={enregistrerBrouillon} className={LIEN}>Enregistrer le brouillon</button>
+              <HpButton type="submit" role="principal" icon={Send} disabled={envoi.isPending}>{envoi.isPending ? "ENVOI EN COURS…" : "ENVOYER LA DEMANDE"}</HpButton>
+            </div>
+          </div>
+
+          <ReglesArbitrage>
+            <aside className="flex flex-col gap-4 border border-line bg-white p-6">
+              <h2 className="label-13 font-label text-ink">CE QUI SE PASSE ENSUITE</h2>
+              <ol className="flex flex-col gap-3 text-[14px] leading-5">
+                <li><span className="font-semibold">1. Envoi.</span> {nomValideur ? `${nomValideur} reçoit ta demande.` : "La personne qui valide reçoit ta demande."}</li>
+                <li><span className="font-semibold">2. Décision.</span> Validée, refusée ou à compléter.</li>
+                <li><span className="font-semibold">3. Réponse.</span> Tu es prévenu par e-mail en moins de 5 minutes.</li>
+              </ol>
+              <p className="border-t border-line pt-4 text-[12px] leading-4 text-ink-2">Sans réponse après 5 jours ouvrés, tu peux relancer la personne qui décide.</p>
+            </aside>
+          </ReglesArbitrage>
+        </form>
       </div>
     </HpPage>
   );
