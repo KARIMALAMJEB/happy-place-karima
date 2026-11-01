@@ -1,5 +1,6 @@
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { Linkify } from "@/components/linkify";
+import { RichText } from "@/components/hp/rich-text";
+import { openNewsFile, tailleFichier, type NewsFile } from "@/lib/news-media";
 import { formatExactDate } from "@/components/expandable-card";
 import { NewsImage, NewsLinks } from "@/components/news-media";
 import type { News } from "@/lib/dashboard";
@@ -32,10 +33,22 @@ export function NewsReader({ news: n, onClose }: { news: News | null; onClose: (
             </div>
             <div className="flex-1 overflow-y-auto p-md space-y-md">
               {n.image_path && <NewsImage path={n.image_path} alt={n.title} />}
+              {(n.image_paths ?? []).slice(1).map((p) => <NewsImage key={p} path={p} alt="" />)}
               {n.body && (
-                <p className="font-body-md text-body-md text-on-surface whitespace-pre-line wrap-anywhere">
-                  <Linkify text={n.body} />
-                </p>
+                <div className="flex flex-col gap-2 text-[14px] leading-6 wrap-anywhere">
+                  <RichText texte={n.body} />
+                </div>
+              )}
+              {Array.isArray(n.attachments) && (n.attachments as NewsFile[]).length > 0 && (
+                <ul className="flex flex-col gap-1">
+                  {(n.attachments as NewsFile[]).map((f) => (
+                    <li key={f.path}>
+                      <button type="button" onClick={() => void openNewsFile(f.path)} className="text-left text-[14px] font-semibold underline underline-offset-4">
+                        {f.name} <span className="font-normal text-ink-2">({tailleFichier(f.size)})</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
               )}
               <NewsLinks links={n.links} />
             </div>

@@ -24,6 +24,10 @@ export type News = {
   authorized_by?: string | null;
   authorized_at?: string | null;
   refusal_note?: string | null;
+  category?: string | null;
+  image_paths?: string[];
+  image_consent?: boolean;
+  attachments?: unknown;
 };
 
 export type Submission = {
@@ -127,6 +131,43 @@ export async function saveDraftNews(input: {
     : await db.from("news").insert(payload).select("id").single();
   if (error) throw error;
   await applyNewsImage(data.id, input.media);
+}
+
+export const CATEGORIES_NEWS = ["ÉVÉNEMENT CABINET", "VIE DU CABINET", "VIE D'ÉQUIPE", "ÉVÉNEMENT COMMERCIAL"];
+
+// Enregistre (ou crée) le brouillon d'une actualité rédigée à la manière du prototype ; renvoie son identifiant
+export async function saveNewsDraft(input: {
+  id?: string;
+  title: string;
+  body: string;
+  category: string;
+  author: string;
+  author_email: string;
+  scope: "entreprise" | "equipes";
+  teams: string[];
+  imagePaths: string[];
+  imageConsent: boolean;
+  attachments: { path: string; name: string; size: number }[];
+}): Promise<string> {
+  const payload = {
+    scope: input.scope,
+    teams: input.scope === "equipes" ? input.teams : [],
+    title: input.title,
+    body: input.body,
+    category: input.category,
+    author: input.author,
+    author_email: input.author_email.toLowerCase(),
+    status: "brouillon" as const,
+    image_path: input.imagePaths[0] ?? null,
+    image_paths: input.imagePaths,
+    image_consent: input.imageConsent,
+    attachments: input.attachments as unknown as Json,
+  };
+  const { data, error } = input.id
+    ? await db.from("news").update(payload).eq("id", input.id).select("id").single()
+    : await db.from("news").insert(payload).select("id").single();
+  if (error) throw error;
+  return data.id;
 }
 
 export async function publishDraftNews(id: string) {

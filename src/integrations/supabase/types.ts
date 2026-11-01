@@ -266,6 +266,10 @@ export type Database = {
       }
       news: {
         Row: {
+          category: string | null
+          image_paths: string[]
+          image_consent: boolean
+          attachments: Json
           requested_at: string | null
           authorized_by: string | null
           authorized_at: string | null
@@ -284,6 +288,10 @@ export type Database = {
           title: string
         }
         Insert: {
+          category?: string | null
+          image_paths?: string[]
+          image_consent?: boolean
+          attachments?: Json
           requested_at?: string | null
           authorized_by?: string | null
           authorized_at?: string | null
@@ -302,6 +310,10 @@ export type Database = {
           title: string
         }
         Update: {
+          category?: string | null
+          image_paths?: string[]
+          image_consent?: boolean
+          attachments?: Json
           requested_at?: string | null
           authorized_by?: string | null
           authorized_at?: string | null

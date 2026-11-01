@@ -116,3 +116,33 @@ export async function signedNewsImageUrl(path: string): Promise<string> {
   if (error || !data?.signedUrl) throw error ?? new Error("Image indisponible");
   return data.signedUrl;
 }
+
+// --- Rédaction à la manière du prototype : jusqu'à 3 photos (la première = couverture) et 4 PDF ---
+export const MAX_PHOTOS = 3;
+export const MAX_FICHIERS = 4;
+export const PHOTO_MAX_BYTES = 2 * 1024 * 1024;
+export const PDF_MAX_BYTES = 20 * 1024 * 1024;
+export type NewsFile = { path: string; name: string; size: number };
+
+export const tailleFichier = (o: number) =>
+  o < 1024 * 1024 ? `${Math.max(1, Math.round(o / 1024))} Ko` : `${(o / 1024 / 1024).toFixed(1).replace(".", ",")} Mo`;
+
+/** Envoie un fichier (photo ou PDF) dans le dossier de l'actualité ; renvoie son chemin. */
+export async function uploadNewsFile(newsId: string, file: File): Promise<string> {
+  const ext = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf") ? "pdf" : EXT[file.type];
+  if (!ext) throw new Error("Format de fichier non pris en charge");
+  const path = `${newsId}/${crypto.randomUUID()}.${ext}`;
+  const { error } = await supabase.storage.from(NEWS_MEDIA_BUCKET).upload(path, file, { contentType: ext === "pdf" ? "application/pdf" : file.type });
+  if (error) throw new Error(`« ${file.name} » n'a pas pu être envoyé : ${error.message}`);
+  return path;
+}
+
+export async function removeNewsFiles(paths: string[]) {
+  if (!paths.length) return;
+  await supabase.storage.from(NEWS_MEDIA_BUCKET).remove(paths);
+}
+
+export async function openNewsFile(path: string) {
+  const url = await signedNewsImageUrl(path);
+  window.open(url, "_blank", "noopener");
+}
