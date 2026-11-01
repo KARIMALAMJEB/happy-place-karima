@@ -5,6 +5,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Assistant } from "@/components/hp/assistant";
 import { HpButton, HpIconButton } from "@/components/hp/button";
 import { signOut, type AppRole } from "@/lib/auth";
+import { fetchNews } from "@/lib/dashboard";
 import { fetchMyRequests, fetchToReview, nonLue, stateOf } from "@/lib/requests";
 import { cn } from "@/lib/utils";
 
@@ -54,10 +55,25 @@ function useCompteurDemandes(role: AppRole) {
   return { n, label: `${n} demande${n > 1 ? "s" : ""} à valider` };
 }
 
+// Actualités : annonces à autoriser (admin) ou autorisées à publier (manager)
+function useCompteurActus(role: AppRole) {
+  const { email } = useRouteContext({ from: "/_authenticated" });
+  const mail = (email ?? "").toLowerCase();
+  const news = useQuery({ queryKey: ["news"], enabled: role !== "collaborateur", queryFn: fetchNews, retry: false });
+  const liste = news.data ?? [];
+  if (role === "admin") {
+    const n = liste.filter((x) => x.status === "en attente").length;
+    return { n, label: `${n} actualité${n > 1 ? "s" : ""} à autoriser` };
+  }
+  const n = role === "manager" ? liste.filter((x) => x.status === "autorisée" && (x.author_email ?? "").toLowerCase() === mail).length : 0;
+  return { n, label: `${n} annonce${n > 1 ? "s" : ""} autorisée${n > 1 ? "s" : ""} à publier` };
+}
+
 function Sidebar({ role, ouvert, onFermer }: { role: AppRole; ouvert: boolean; onFermer: () => void }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const actifTableau = pathname === "/";
   const compteur = useCompteurDemandes(role);
+  const actus = useCompteurActus(role);
   const actifGestion = pathname.startsWith("/manage");
   const actifActus = pathname.startsWith("/actualites");
   const actifIndic = pathname.startsWith("/indicateurs");
@@ -93,6 +109,7 @@ function Sidebar({ role, ouvert, onFermer }: { role: AppRole; ouvert: boolean; o
         <Link to="/actualites" aria-current={actifActus ? "page" : undefined} className={lien(actifActus)}>
           <Newspaper size={18} aria-hidden />
           <span className="flex-1">Actualités</span>
+          {actus.n > 0 && <Count label={actus.label}>{actus.n}</Count>}
         </Link>
         <Link to="/demandes" aria-current={actifDemandes ? "page" : undefined} className={lien(actifDemandes)}>
           <ClipboardList size={18} aria-hidden />
