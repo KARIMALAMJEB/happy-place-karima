@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 import { ClipboardList, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Encadre } from "@/components/hp/encadre";
@@ -8,37 +7,71 @@ import { HpButton } from "@/components/hp/button";
 import { HpPage, useOwnProfile } from "@/components/hp/page";
 import { ReglesArbitrage } from "@/components/hp/regles";
 import { TabButton, TabList } from "@/components/hp/tabs";
-import { BandeauFiltre, RecapTuiles, buildTuiles, type Onglet } from "@/components/hp/recap";
-import { DELAI_RELANCE, Tableau, joursOuvres } from "@/components/hp/demandes-ui";
+import { BandeauFiltre, RecapTuiles, buildTuiles, type Onglet, type Tuile } from "@/components/hp/recap";
+import { Tableau, type Perspective } from "@/components/hp/demandes-ui";
 import {
-  VISIBILITY_LABEL,
   fetchMyRequests,
   fetchAllRequests,
   fetchToReview,
   fetchValidatedRequests,
-  nonLue,
-  remindRequest,
-  refOf,
   stateOf,
   STATE_LABEL,
-  type RequestState,
-  titleOf,
   type RequestRow,
+  type RequestState,
 } from "@/lib/requests";
-import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/demandes")({
   head: () => ({ meta: [{ title: "Demandes — Happy Place" }] }),
   component: DemandesPage,
 });
 
+type Statut = "tous" | RequestState;
+const ETATS: RequestState[] = ["en_attente", "a_completer", "validee", "refusee"];
+
+// Barre d'onglets de statut d'une liste (Toutes, En attente, À compléter, Validées, Refusées), avec compteurs
+function BarreStatuts({ liste, statut, onChoisir }: { liste: RequestRow[]; statut: Statut; onChoisir: (s: Statut) => void }) {
+  return (
+    <div className="overflow-x-auto border-b border-line px-6 py-3">
+      <TabList label="Filtrer par statut">
+        <TabButton active={statut === "tous"} onClick={() => onChoisir("tous")}>{`Toutes (${liste.length})`}</TabButton>
+        {ETATS.map((e) => (
+          <TabButton key={e} active={statut === e} onClick={() => onChoisir(e)}>
+            {`${STATE_LABEL[e]} (${liste.filter((r) => stateOf(r) === e).length})`}
+          </TabButton>
+        ))}
+      </TabList>
+    </div>
+  );
+}
+
+// Encadré de demandes avec onglets de statut ; un filtre de tuile actif remplace la liste par la liste filtrée
+function BlocStatuts({ id, titre, sousTitre, liste, perspective, vide, tuile, onRetirer }: {
+  id: string; titre: string; sousTitre?: string; liste: RequestRow[]; perspective: Perspective; vide: string;
+  tuile: Tuile | null; onRetirer: () => void;
+}) {
+  const [statut, setStatut] = useState<Statut>("tous");
+  const base = tuile ? liste.filter(tuile.garde) : liste;
+  const lignes = statut === "tous" ? base : base.filter((r) => stateOf(r) === statut);
+  return (
+    <Encadre id={id} icon={ClipboardList} title={titre} subtitle={sousTitre} compteur={`${base.length} demande${base.length > 1 ? "s" : ""}`}>
+      {tuile && (
+        <div className="border-b border-line px-6 py-3">
+          <BandeauFiltre label={tuile.label} n={base.length} onRetirer={onRetirer} />
+        </div>
+      )}
+      <BarreStatuts liste={base} statut={statut} onChoisir={setStatut} />
+      <Tableau lignes={lignes} perspective={perspective} vide={vide} />
+    </Encadre>
+  );
+}
+
 function DemandesPage() {
   const { email } = useOwnProfile();
   const { role } = Route.useRouteContext();
-  const [onglet, setOnglet] = useState<Onglet>(role === "collaborateur" ? "mes" : "traiter");
   const [equipe, setEquipe] = useState("");
+  const [nature, setNature] = useState("");
+  const [statutVisibles, setStatutVisibles] = useState("");
   const [tuile, setTuile] = useState<string | null>(null);
-  const [statut, setStatut] = useState<"tous" | RequestState>("tous");
   const mes = useQuery({ queryKey: ["requests", "mine", email], enabled: !!email, queryFn: () => fetchMyRequests(email) });
   const atraiter = useQuery({ queryKey: ["requests", "review"], enabled: role !== "collaborateur", queryFn: fetchToReview });
   const validees = useQuery({ queryKey: ["requests", "validated"], queryFn: fetchValidatedRequests });
@@ -48,54 +81,15 @@ function DemandesPage() {
   const mesL = mes.data ?? [];
   const aTraiterL = atraiter.data ?? [];
   const decideesL = (toutes.data ?? []).filter((r) => r.status !== "en attente");
-  const urgent = (r: RequestRow) => joursOuvres(r.created_at) >= DELAI_RELANCE;
+  const visibles = (validees.data ?? []).filter(
+    (r) => (!equipe || r.team === equipe) && (!nature || (nature === "bloquante") === !!r.blocking) && (!statutVisibles || r.status === statutVisibles),
+  );
 
   const tuiles = buildTuiles(role, mesL, aTraiterL);
   const actif = tuiles.find((t) => t.id === tuile) ?? null;
-  const filtrer = (l: RequestRow[], pour: Onglet) => (actif && actif.onglet === pour ? l.filter(actif.garde) : l);
-  const filtrees = filtrer((validees.data ?? []).filter((r) => !equipe || r.team === equipe), "validees");
-
-  const base: RequestRow[] =
-    onglet === "traiter" ? filtrer(aTraiterL, "traiter")
-    : onglet === "decidees" ? decideesL
-    : onglet === "toutes" ? (toutes.data ?? [])
-    : onglet === "mes" ? filtrer(mesL, "mes")
-    : filtrees;
-  const nStatut = (e: RequestState) => base.filter((r) => stateOf(r) === e).length;
-  const lignes = statut === "tous" ? base : base.filter((r) => stateOf(r) === statut);
-  const ETATS: RequestState[] = ["en_attente", "a_completer", "validee", "refusee"];
-  const barreStatuts = (
-    <div className="overflow-x-auto border-t border-line px-6 py-3">
-      <TabList label="Filtrer par statut">
-        <TabButton active={statut === "tous"} onClick={() => setStatut("tous")}>{`Toutes (${base.length})`}</TabButton>
-        {ETATS.map((e) => (
-          <TabButton key={e} active={statut === e} onClick={() => setStatut(e)}>{`${STATE_LABEL[e]} (${nStatut(e)})`}</TabButton>
-        ))}
-      </TabList>
-    </div>
-  );
-
-  const tab = (id: Onglet, label: string, n?: number) => (
-    <button
-      type="button"
-      role="tab"
-      aria-selected={onglet === id}
-      onClick={() => { setOnglet(id); setTuile(null); setStatut("tous"); }}
-      className={cn(
-        "label h-11 border-b-2 px-4",
-        onglet === id ? "border-b-anthracite bg-neutral-1 text-anthracite" : "border-b-transparent text-ink-2 hover:text-anthracite",
-      )}
-    >
-      {label}{n !== undefined ? ` (${n})` : ""}
-    </button>
-  );
-
-  const nFiltrees = actif ? (actif.onglet === "traiter" ? aTraiterL : mesL).filter(actif.garde).length : 0;
-  const bandeauFiltre = actif && (
-    <div className="border-t border-line px-6 py-3">
-      <BandeauFiltre label={actif.label} n={nFiltrees} onRetirer={() => setTuile(null)} />
-    </div>
-  );
+  const pour = (o: Onglet) => (actif && actif.onglet === o ? actif : null);
+  const retirer = () => setTuile(null);
+  const select = "min-h-11 border border-field bg-white px-3 text-[14px] text-ink";
 
   return (
     <HpPage>
@@ -108,59 +102,74 @@ function DemandesPage() {
             <HpButton role="publie" icon={Plus}>DÉPOSER UNE DEMANDE</HpButton>
           </Link>
         </div>
-        <RecapTuiles tuiles={tuiles} actif={tuile} onChoisir={(t) => { setStatut("tous"); if (!t) return setTuile(null); setOnglet(t.onglet); setTuile(t.id); }} />
+        <RecapTuiles
+          tuiles={tuiles}
+          actif={tuile}
+          onChoisir={(t) => {
+            setTuile(t ? t.id : null);
+            if (t) requestAnimationFrame(() => document.getElementById(t.onglet === "traiter" ? "a-valider" : "mes-demandes")?.scrollIntoView({ block: "start", behavior: "smooth" }));
+          }}
+        />
       </section>
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
-        <Encadre
-          icon={ClipboardList}
-          title={onglet === "mes" ? "Mes demandes" : onglet === "decidees" ? "Demandes décidées : mon équipe" : onglet === "toutes" ? "Toutes les demandes" : onglet === "traiter" ? (role === "manager" ? "Demandes à valider : mon équipe" : "Demandes à valider") : "Demandes visibles par tous"}
-          subtitle={onglet === "validees" ? "Lecture seule ; l'auteur d'une demande confidentielle est masqué" : undefined}
-          filtre={
-            <div className="flex w-full flex-wrap items-center justify-between gap-3">
-              <div role="tablist" className="flex">
-                {role !== "collaborateur" && tab("traiter", "À valider", aTraiterL.length)}
-                {role === "manager" && tab("decidees", "Décidées", decideesL.length)}
-                {role === "admin" && tab("toutes", "Toutes les demandes", toutes.data?.length)}
-                {tab("mes", "Mes demandes", mesL.length)}
-                {tab("validees", "Demandes visibles", validees.data?.length)}
-              </div>
-              {onglet === "validees" && (
-                <select
-                  aria-label="Filtrer par équipe"
-                  value={equipe}
-                  onChange={(e) => setEquipe(e.target.value)}
-                  className="min-h-11 border border-field bg-white px-3 text-[14px] text-ink"
-                >
+        <div className="flex min-w-0 flex-col gap-6">
+          {role !== "collaborateur" && (
+            <BlocStatuts
+              id="a-valider"
+              titre={role === "manager" ? "Demandes à valider : mon équipe" : "Demandes à valider"}
+              liste={aTraiterL}
+              perspective="valideur"
+              vide="Aucune demande n'attend ta décision."
+              tuile={pour("traiter")}
+              onRetirer={retirer}
+            />
+          )}
+          {role === "manager" && (
+            <BlocStatuts id="decidees" titre="Demandes décidées : mon équipe" liste={decideesL} perspective="valideur" vide="Aucune demande décidée pour le moment." tuile={null} onRetirer={retirer} />
+          )}
+          {role === "admin" && (
+            <BlocStatuts id="toutes" titre="Toutes les demandes" sousTitre="Lecture seule, toutes équipes" liste={toutes.data ?? []} perspective="valideur" vide="Aucune demande." tuile={null} onRetirer={retirer} />
+          )}
+
+          {mes.isError ? (
+            <p role="alert" className="border border-line bg-white px-6 py-6">Tes demandes sont indisponibles pour le moment.</p>
+          ) : (
+            <BlocStatuts id="mes-demandes" titre="Mes demandes" liste={mesL} perspective="auteur" vide="Aucune demande dans ce statut." tuile={pour("mes")} onRetirer={retirer} />
+          )}
+
+          <Encadre
+            id="demandes-visibles"
+            icon={ClipboardList}
+            title="Demandes visibles par tous"
+            subtitle="Lecture seule ; l'auteur d'une demande confidentielle est masqué"
+            compteur={`${visibles.length} sur ${validees.data?.length ?? 0}`}
+            filtre={
+              <>
+                <select aria-label="Filtrer par équipe" value={equipe} onChange={(e) => setEquipe(e.target.value)} className={select}>
                   <option value="">Toutes les équipes</option>
                   {equipes.map((t) => <option key={t} value={t}>{t}</option>)}
                 </select>
-              )}
-            </div>
-          }
-        >
-          {bandeauFiltre}
-          {barreStatuts}
-          {onglet === "traiter" ? (
-            <Tableau lignes={lignes} perspective="valideur" vide="Aucune demande dans ce statut." />
-          ) : onglet === "decidees" ? (
-            <Tableau lignes={lignes} perspective="valideur" vide="Aucune demande dans ce statut." />
-          ) : onglet === "toutes" ? (
-            <Tableau lignes={lignes} perspective="valideur" vide="Aucune demande dans ce statut." />
-          ) : onglet === "mes" ? (
-            mes.isLoading ? (
+                <select aria-label="Filtrer par nature" value={nature} onChange={(e) => setNature(e.target.value)} className={select}>
+                  <option value="">Toutes natures</option>
+                  <option value="bloquante">Bloquante</option>
+                  <option value="non-bloquante">Non bloquante</option>
+                </select>
+                <select aria-label="Filtrer par statut" value={statutVisibles} onChange={(e) => setStatutVisibles(e.target.value)} className={select}>
+                  <option value="">Tous statuts</option>
+                  <option value="en attente">En attente</option>
+                  <option value="validée">Validée</option>
+                </select>
+              </>
+            }
+          >
+            {validees.isLoading ? (
               <p className="px-6 py-6 text-ink-2">Chargement…</p>
-            ) : mes.isError ? (
-              <p role="alert" className="px-6 py-6">Tes demandes sont indisponibles pour le moment.</p>
             ) : (
-              <Tableau lignes={lignes} perspective="auteur" vide="Aucune demande dans ce statut." />
-            )
-          ) : validees.isLoading ? (
-            <p className="px-6 py-6 text-ink-2">Chargement…</p>
-          ) : (
-            <Tableau lignes={lignes} perspective="lecteur" vide="Aucune demande ne correspond à ces filtres." />
-          )}
-        </Encadre>
+              <Tableau lignes={visibles} perspective="lecteur" vide="Aucune demande ne correspond à ces filtres." />
+            )}
+          </Encadre>
+        </div>
         <ReglesArbitrage />
       </div>
     </HpPage>
