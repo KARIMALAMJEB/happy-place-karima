@@ -16,6 +16,7 @@ import {
   completeRequest,
   type Complement,
   markSeen,
+  motifLabel,
   nonLue,
   questionsOf,
   decideRequest,
@@ -189,7 +190,7 @@ function DemandeDetail() {
           )}
           {etat === "refusee" && r.rejection_note && (
             <p className="border-l-4 border-line bg-neutral-1 px-4 py-3 text-[14px] leading-5">
-              <span className="font-semibold">Motif : {r.rejection_category}</span>
+              <span className="font-semibold">Motif : {motifLabel(r.rejection_category)}</span>
               <br />
               {r.rejection_note}
             </p>
@@ -292,9 +293,9 @@ function DemandeDetail() {
               <div className="flex flex-col gap-3 border border-line p-4">
                 {mode === "refuser" && (
                   <>
-                    <label htmlFor="cat" className="label text-ink">Motif du refus</label>
+                    <label htmlFor="cat" className="label text-ink">Motif du refus (définitif)</label>
                     <select id="cat" className={champ} value={categorie} onChange={(e) => setCategorie(e.target.value as typeof categorie)}>
-                      {REJECTION_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                      {REJECTION_CATEGORIES.map((c) => <option key={c} value={c}>{motifLabel(c)}</option>)}
                     </select>
                   </>
                 )}

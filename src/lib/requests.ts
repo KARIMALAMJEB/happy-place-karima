@@ -145,6 +145,9 @@ export async function fetchToReview(): Promise<RequestRow[]> {
   return (data ?? []) as RequestRow[];
 }
 
+// Libellé affiché d'un motif (la base stocke « à clarifier », « doublon »…)
+export const motifLabel = (m: string | null | undefined) => (m ? m.charAt(0).toUpperCase() + m.slice(1) : "");
+
 export const REJECTION_CATEGORIES = ["en désaccord avec les process", "doublon", "autre"] as const;
 
 export type Decision =
