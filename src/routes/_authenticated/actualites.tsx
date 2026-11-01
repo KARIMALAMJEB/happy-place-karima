@@ -172,7 +172,10 @@ function Carte({ n }: { n: News }) {
         </h2>
         {extrait(n) && <p className="line-clamp-3 text-[14px] leading-5">{extrait(n)}</p>}
         <div className="mt-auto flex flex-col gap-2 border-t border-line pt-3 text-[12px] leading-4 text-ink-2">
-          <p><span className="font-semibold text-ink">{n.author}</span></p>
+          <p>
+            <span className="font-semibold text-ink">{n.author}</span>
+            {(n.author_role || n.author_team) && <span> · {[n.author_role, n.author_team].filter(Boolean).join(" · ")}</span>}
+          </p>
           <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <span>Publié le {dateSansJour(n.created_at)}</span>
             {n.body && (

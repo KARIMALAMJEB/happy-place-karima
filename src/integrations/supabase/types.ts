@@ -276,6 +276,8 @@ export type Database = {
           refusal_note: string | null
           author: string
           author_email: string | null
+          author_role: string | null
+          author_team: string | null
           body: string | null
           created_at: string
           id: string
@@ -298,6 +300,8 @@ export type Database = {
           refusal_note?: string | null
           author?: string
           author_email?: string | null
+          author_role?: string | null
+          author_team?: string | null
           body?: string | null
           created_at?: string
           id?: string
@@ -320,6 +324,8 @@ export type Database = {
           refusal_note?: string | null
           author?: string
           author_email?: string | null
+          author_role?: string | null
+          author_team?: string | null
           body?: string | null
           created_at?: string
           id?: string
