@@ -12,11 +12,12 @@ import { Tableau } from "@/components/hp/demandes-ui";
 import { Encadre, Picto } from "@/components/hp/encadre";
 import { HpPage, useOwnProfile } from "@/components/hp/page";
 import { BandeauFiltre, RecapTuiles, buildTuiles } from "@/components/hp/recap";
+import { MetricTile, dateMaj, derniereMaj } from "@/components/hp/indicateurs";
 import { Couverture, estEntreprise, imagesDe, signature } from "@/components/hp/news-shared";
 import { TabButton, TabList } from "@/components/hp/tabs";
 import {
-  deleteDraftNews, deltaText, exportMyRecentSubmissions, fetchMetrics, fetchNews, formatMetricValue,
-  publishDraftNews, requestNewsAuthorization, authorizeNews, refuseNews, TREND_LABELS, type News,
+  deleteDraftNews, exportMyRecentSubmissions, fetchMetrics, fetchNews,
+  publishDraftNews, requestNewsAuthorization, authorizeNews, refuseNews, type News,
 } from "@/lib/dashboard";
 import { fetchAllRequests, fetchMyRequests, fetchToReview, fetchValidatedRequests } from "@/lib/requests";
 import { BOITE_A_OUTILS, ICONES_OUTILS } from "@/lib/outils";
@@ -32,7 +33,6 @@ export const Route = createFileRoute("/_authenticated/")({
   component: Accueil,
 });
 
-const LABEL_METRIC: Record<string, string> = { training_kpi: "Taux de placement", active_users: "Missions actives" };
 const DELAI = 6000;
 const LIGNES = 5;
 
@@ -354,23 +354,16 @@ function Carrousel({ news, loading, error, equipe, className }: { news: News[]; 
 
 function Indicateurs({ metrics, error }: { metrics?: Awaited<ReturnType<typeof fetchMetrics>>; error: boolean }) {
   const liste = useMemo(() => (metrics ?? []).slice(0, 4), [metrics]);
+  const maj = derniereMaj(metrics ?? []);
   return (
-    <Encadre id="indicateurs" icon={TrendingUp} title="Indicateurs clés" subtitle="Performance de l'entreprise">
+    <Encadre id="indicateurs" icon={TrendingUp} title="Indicateurs clés" subtitle={<>Performance de l'entreprise{maj && <span className="block">Mis à jour le {dateMaj(maj)}</span>}</>}>
       {error ? (
         <p role="alert" className="px-6 py-6">Les indicateurs sont indisponibles.</p>
       ) : liste.length === 0 ? (
         <p className="px-6 py-6 text-[14px] leading-5 text-ink-2">Aucun indicateur.</p>
       ) : (
         <div className="flex flex-1 flex-col gap-3 p-6">
-          {liste.map((m) => (
-            <div key={m.key} className="flex flex-1 items-center justify-between gap-4 border border-line bg-white px-5 py-4">
-              <span className="flex min-w-0 flex-col gap-1">
-                <span className="label text-ink-2">{LABEL_METRIC[m.key] ?? m.label}</span>
-                <span className="font-title text-[28px] leading-9 font-bold whitespace-nowrap text-ink">{formatMetricValue(m.value, m.unit)}</span>
-                <span className="text-[12px] leading-4 text-ink-2">{TREND_LABELS[m.trend]}{deltaText(m) ? ` · ${deltaText(m)}` : ""}</span>
-              </span>
-            </div>
-          ))}
+          {liste.map((m) => <MetricTile key={m.key} m={m} lien />)}
         </div>
       )}
     </Encadre>
