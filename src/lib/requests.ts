@@ -125,3 +125,64 @@ export async function createRequest(input: NewRequest, file?: File | null) {
   });
   if (error) throw error;
 }
+
+export async function fetchRequest(id: string): Promise<RequestRow | null> {
+  const { data, error } = await sb.from("submissions").select("*").eq("id", id).maybeSingle();
+  if (error) throw error;
+  return (data ?? null) as RequestRow | null;
+}
+
+// Demandes en attente que l'utilisateur peut traiter (la base ne renvoie que celles de ses équipes pour un manager)
+export async function fetchToReview(): Promise<RequestRow[]> {
+  const { data, error } = await sb
+    .from("submissions")
+    .select("*")
+    .eq("status", "en attente")
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as RequestRow[];
+}
+
+export const REJECTION_CATEGORIES = ["en désaccord avec les process", "doublon", "autre"] as const;
+
+export type Decision =
+  | { kind: "valider" }
+  | { kind: "refuser"; category: (typeof REJECTION_CATEGORIES)[number]; note: string }
+  | { kind: "preciser"; note: string };
+
+export async function decideRequest(id: string, d: Decision) {
+  const patch =
+    d.kind === "valider"
+      ? { status: "validée", rejection_category: null, rejection_note: null }
+      : {
+          status: "refusée",
+          rejection_category: d.kind === "preciser" ? "à clarifier" : d.category,
+          rejection_note: d.note.trim().slice(0, 500),
+        };
+  const { error } = await sb.from("submissions").update(patch).eq("id", id);
+  if (error) throw error;
+}
+
+export async function updateFollowUp(
+  id: string,
+  v: { follow_up: FollowUp | null; responsible: string | null; target_date: string | null; done: boolean },
+) {
+  const { error } = await sb.from("submissions").update(v).eq("id", id);
+  if (error) throw error;
+}
+
+// L'auteur répond après une demande de précisions : RPC contrôlée côté base
+export async function completeRequest(id: string, answer: string) {
+  const { error } = await sb.rpc("complete_submission", {
+    _id: id,
+    _answers: [],
+    _infos: answer.trim(),
+  });
+  if (error) throw error;
+}
+
+export async function attachmentUrl(path: string): Promise<string> {
+  const { data, error } = await sb.storage.from(ATTACHMENT_BUCKET).createSignedUrl(path, 120);
+  if (error) throw error;
+  return data.signedUrl;
+}

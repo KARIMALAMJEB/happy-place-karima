@@ -9,6 +9,7 @@ import { BloquanteMot, StatutBadge } from "@/components/hp/statut";
 import {
   VISIBILITY_LABEL,
   fetchMyRequests,
+  fetchToReview,
   fetchValidatedRequests,
   refOf,
   stateOf,
@@ -35,7 +36,7 @@ function Ligne({ r, auteur }: { r: RequestRow; auteur: boolean }) {
             {refOf(r)} · {r.team}
             {!auteur && (r.confidential_identity ? " · Auteur confidentiel" : ` · ${r.author_name}`)}
           </span>
-          <span className="text-[16px] leading-6 font-semibold text-ink">{titleOf(r)}</span>
+          <Link to="/demande/$id" params={{ id: r.id }} className="text-[16px] leading-6 font-semibold text-ink underline-offset-4 hover:underline">{titleOf(r)}</Link>
           <span className="text-[12px] leading-4 text-ink-2">
             <BloquanteMot bloquante={r.blocking} /> · {VISIBILITY_LABEL[r.visibility]} · Déposée le {date(r.created_at)}
           </span>
@@ -56,15 +57,17 @@ function Ligne({ r, auteur }: { r: RequestRow; auteur: boolean }) {
 
 function DemandesPage() {
   const { email } = useOwnProfile();
-  const [onglet, setOnglet] = useState<"mes" | "validees">("mes");
+  const { role } = Route.useRouteContext();
+  const [onglet, setOnglet] = useState<"mes" | "validees" | "traiter">(role === "collaborateur" ? "mes" : "traiter");
   const [equipe, setEquipe] = useState("");
   const mes = useQuery({ queryKey: ["requests", "mine", email], enabled: !!email, queryFn: () => fetchMyRequests(email) });
+  const atraiter = useQuery({ queryKey: ["requests", "review"], enabled: role !== "collaborateur", queryFn: fetchToReview });
   const validees = useQuery({ queryKey: ["requests", "validated"], queryFn: fetchValidatedRequests });
 
   const equipes = useMemo(() => [...new Set((validees.data ?? []).map((r) => r.team))].sort(), [validees.data]);
   const filtrees = (validees.data ?? []).filter((r) => !equipe || r.team === equipe);
 
-  const tab = (id: "mes" | "validees", label: string, n?: number) => (
+  const tab = (id: "mes" | "validees" | "traiter", label: string, n?: number) => (
     <button
       type="button"
       role="tab"
@@ -90,11 +93,12 @@ function DemandesPage() {
 
       <Encadre
         icon={ClipboardList}
-        title={onglet === "mes" ? "Mes demandes" : "Demandes validées"}
-        compteur={onglet === "mes" ? `${mes.data?.length ?? 0} demande(s)` : `${filtrees.length} demande(s)`}
+        title={onglet === "mes" ? "Mes demandes" : onglet === "traiter" ? "Demandes à traiter" : "Demandes validées"}
+        compteur={`${onglet === "mes" ? (mes.data?.length ?? 0) : onglet === "traiter" ? (atraiter.data?.length ?? 0) : filtrees.length} demande(s)`}
         filtre={
           <div className="flex w-full flex-wrap items-center justify-between gap-3">
             <div role="tablist" className="flex">
+              {role !== "collaborateur" && tab("traiter", "À traiter", atraiter.data?.length)}
               {tab("mes", "Mes demandes", mes.data?.length)}
               {tab("validees", "Demandes validées", validees.data?.length)}
             </div>
@@ -112,7 +116,13 @@ function DemandesPage() {
           </div>
         }
       >
-        {onglet === "mes" ? (
+        {onglet === "traiter" ? (
+          (atraiter.data ?? []).length === 0 ? (
+            <p className="px-6 py-6 text-ink-2">Aucune demande en attente de décision.</p>
+          ) : (
+            <ul>{(atraiter.data ?? []).map((r) => <Ligne key={r.id} r={r} auteur={false} />)}</ul>
+          )
+        ) : onglet === "mes" ? (
           mes.isLoading ? (
             <p className="px-6 py-6 text-ink-2">Chargement…</p>
           ) : mes.isError ? (
