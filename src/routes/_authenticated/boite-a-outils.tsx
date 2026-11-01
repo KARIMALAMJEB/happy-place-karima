@@ -8,7 +8,12 @@ import { HpPage, useOwnProfile } from "@/components/hp/page";
 import { TabButton, TabList } from "@/components/hp/tabs";
 import { BOITE_A_OUTILS, ICONES_OUTILS, RESSOURCES, ressourceVisible, type CategorieOutil, type Ressource } from "@/lib/outils";
 
-export const Route = createFileRoute("/_authenticated/boite-a-outils")({ component: BoiteAOutils });
+export const Route = createFileRoute("/_authenticated/boite-a-outils")({
+  validateSearch: (s: Record<string, unknown>): { categorie?: CategorieOutil } => ({
+    categorie: BOITE_A_OUTILS.find((c) => c === s.categorie),
+  }),
+  component: BoiteAOutils,
+});
 
 const TITRES: Record<CategorieOutil, string> = { PROCESS: "Process", OUTILS: "Outils", "INFOS RH": "Infos RH", "ASSISTANCE ET SUPPORT": "Assistance et support" };
 const sansAccents = (s: string) => s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
@@ -68,7 +73,8 @@ function Page() {
   const { role } = useRouteContext({ from: "/_authenticated" });
   const { team } = useOwnProfile();
   const admin = role === "admin";
-  const [filtre, setFiltre] = useState<CategorieOutil | "tous">("tous");
+  const { categorie } = Route.useSearch();
+  const [filtre, setFiltre] = useState<CategorieOutil | "tous">(categorie ?? "tous");
   const [recherche, setRecherche] = useState("");
   const q = sansAccents(recherche.trim());
   const categories = BOITE_A_OUTILS.filter((c) => filtre === "tous" || c === filtre);

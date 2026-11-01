@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle, BookOpen, ChevronLeft, ChevronRight, ClipboardList, Download, FileText, Image as ImageIcon,
-  Newspaper, Pause, PenLine, Play, Plus, Send, TrendingUp,
+  ArrowRight, Newspaper, Pause, PenLine, Play, Plus, Send, TrendingUp, Wrench,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -10,7 +10,7 @@ import { DepartureNotices } from "@/components/departure-notices";
 import { BlockerArchive } from "@/components/dashboard-extras";
 import { HpButton, HpIconButton } from "@/components/hp/button";
 import { Tableau } from "@/components/hp/demandes-ui";
-import { Encadre } from "@/components/hp/encadre";
+import { Encadre, Picto } from "@/components/hp/encadre";
 import { HpPage, useOwnProfile } from "@/components/hp/page";
 import { RecapTuiles, buildTuiles } from "@/components/hp/recap";
 import { NewsImage } from "@/components/news-media";
@@ -20,6 +20,7 @@ import {
   publishDraftNews, timeAgo, updateBlockerStatus, TREND_LABELS, type News,
 } from "@/lib/dashboard";
 import { fetchAllRequests, fetchMyRequests, fetchToReview, fetchValidatedRequests } from "@/lib/requests";
+import { BOITE_A_OUTILS, ICONES_OUTILS } from "@/lib/outils";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/")({
@@ -209,6 +210,26 @@ function Accueil() {
           </Encadre>
         )}
       </div>
+
+      <Encadre id="boite-a-outils" icon={Wrench} title="Boîte à outils">
+        <div className="grid gap-6 p-6 sm:grid-cols-2 lg:grid-cols-4">
+          {BOITE_A_OUTILS.map((t) => {
+            const Icon = ICONES_OUTILS[t];
+            return (
+              <Link
+                key={t}
+                to="/boite-a-outils"
+                search={{ categorie: t }}
+                className="flex h-20 items-center gap-3 border border-line bg-white px-5 hover:bg-neutral-1"
+              >
+                <Picto icon={Icon} />
+                <span className="label-13 flex-1 text-ink">{t}</span>
+                <ArrowRight size={16} aria-hidden className="text-ink" />
+              </Link>
+            );
+          })}
+        </div>
+      </Encadre>
       <BlockerArchive open={archive} onClose={() => setArchive(false)} />
       <NewsReader news={lecture} onClose={() => setLecture(null)} />
     </HpPage>
