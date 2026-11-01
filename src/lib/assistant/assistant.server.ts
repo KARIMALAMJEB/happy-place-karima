@@ -151,18 +151,19 @@ export async function repondre(question: string, profil: Profil, actualites: Act
     const larges = q ? rechercher(q, docs, true, 5).filter((e) => lisibles.has(e.lien)) : [];
     contexte = [...extraits, ...larges.filter((l) => !extraits.some((e) => e.titre === l.titre))].slice(0, 5);
   }
-  if (contexte.length === 0) {
-    if (!dansLePerimetre(q)) return journaliser(profil.id, { answer: HORS_SUJET, sources: [], mode: "hors-sujet", ia: false, contact: contactPour() });
-    contexte = docs
-      .filter((d) => d.type === "Guide")
-      .slice(0, 12)
-      .map((d) => ({ titre: d.titre, type: d.type, lien: d.lien, score: 0, phrases: d.phrases.slice(0, 2), texte: d.phrases.join(" ") }));
-    if (contexte.length === 0) return journaliser(profil.id, diag(rien(false), "aucun contenu lisible"));
-  }
+  if (contexte.length === 0 && !dansLePerimetre(q)) return journaliser(profil.id, { answer: HORS_SUJET, sources: [], mode: "hors-sujet", ia: false, contact: contactPour() });
+  // Le guide lisible par ce profil accompagne toujours les extraits trouvés : le modèle y cherche le sens, même quand les mots diffèrent
+  const dejaLa = new Set(contexte.map((c) => c.titre));
+  const guide = docs
+    .filter((d) => d.type === "Guide" && !dejaLa.has(d.titre))
+    .map((d) => ({ titre: d.titre, type: d.type, lien: d.lien, score: 0, phrases: d.phrases.slice(0, 2), texte: d.phrases.join(" ") }));
+  const trouves = contexte;
+  contexte = [...contexte, ...guide].slice(0, 16);
+  if (contexte.length === 0) return journaliser(profil.id, diag(rien(false), "aucun contenu lisible"));
   try {
     const texte = await appelerModele(q, contexte);
     if (texte.includes("Je n'ai rien trouvé")) return journaliser(profil.id, rien(true));
-    return journaliser(profil.id, { answer: texte, sources: (extraits.length ? extraits : contexte.filter((c) => c.score > 0)).slice(0, 3).map(versSource), mode: "ia", ia: true });
+    return journaliser(profil.id, { answer: texte, sources: trouves.slice(0, 3).map(versSource), mode: "ia", ia: true });
   } catch (e) {
     // Quota épuisé, réseau, délai dépassé : le meilleur extrait plutôt qu'un plantage (seul le type d'erreur est journalisé)
     const why = e instanceof Error ? e.message.slice(0, 80) : "erreur";
