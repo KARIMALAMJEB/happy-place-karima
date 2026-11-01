@@ -14,6 +14,8 @@ export type News = {
   body: string | null;
   author: string;
   author_email?: string | null;
+  author_role?: string | null;
+  author_team?: string | null;
   status: string;
   created_at: string;
   image_path?: string | null;
