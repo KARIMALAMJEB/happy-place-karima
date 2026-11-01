@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -122,7 +122,8 @@ function ManagerSpace() {
       return data;
     },
   });
-  const firstName = ownProfile.data?.first_name?.trim() || myName.split(/[\s@]/)[0] || "";
+  const rawFirst = ownProfile.data?.first_name?.trim() || myName.split(/[\s@]/)[0] || "";
+  const firstName = rawFirst.charAt(0).toUpperCase() + rawFirst.slice(1).toLowerCase();
   const displayName =
     [ownProfile.data?.first_name, ownProfile.data?.last_name].filter(Boolean).join(" ").trim() || myName;
   const today = new Intl.DateTimeFormat("fr-FR", {
@@ -308,17 +309,11 @@ function ManagerSpace() {
               </h1>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <HpButton
-                role="publie"
-                icon={Plus}
-                onClick={() => {
-                  setSubmissionErrors({});
-                  const only = role === "manager" && myTeams.data?.length === 1 ? myTeams.data[0] : "";
-                  setSubmissionForm({ author_name: "", team: only, content: "", status: "en attente" });
-                }}
-              >
-                SOUMETTRE UNE IDÉE
-              </HpButton>
+              <Link to="/deposer" className="contents">
+                <HpButton role="publie" icon={Plus}>
+                  DÉPOSER UNE DEMANDE
+                </HpButton>
+              </Link>
               <HpButton role="consulte" icon={Download} disabled={exportReport.isPending} onClick={() => exportReport.mutate()}>
                 {exportReport.isPending ? "EXPORT EN COURS…" : "EXPORTER LE RAPPORT"}
               </HpButton>

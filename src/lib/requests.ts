@@ -1,0 +1,127 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { supabase } from "@/integrations/supabase/client";
+
+// Demandes V2 (FT1). Client non typé : les types générés de Supabase seront régénérés plus tard,
+// les colonnes ajoutées par la migration ft1_demandes n'y figurent pas encore.
+const sb = supabase as unknown as SupabaseClient;
+
+export const THEMES = ["Conditions de travail", "Cantine", "CE", "Informatique", "Autre"] as const;
+export type Theme = (typeof THEMES)[number];
+export type Visibility = "tous" | "equipe" | "manager";
+export type FollowUp = "ouvert" | "en_cours" | "resolu";
+
+export const VISIBILITY_LABEL: Record<Visibility, string> = {
+  tous: "Visible par tous",
+  equipe: "Visible par mon équipe",
+  manager: "Visible par mon manager uniquement",
+};
+
+export type RequestRow = {
+  id: string;
+  ref_number: number;
+  title: string | null;
+  content: string;
+  status: "en attente" | "validée" | "refusée";
+  created_at: string;
+  team: string;
+  author_name: string;
+  submitted_by_email: string | null;
+  blocking: boolean;
+  visibility: Visibility;
+  theme: string | null;
+  confidential_identity: boolean;
+  validator_type: "manager" | "admin" | null;
+  follow_up: FollowUp | null;
+  responsible: string | null;
+  target_date: string | null;
+  done: boolean;
+  rejection_category: string | null;
+  rejection_note: string | null;
+  decided_at: string | null;
+  decided_by_name: string | null;
+  clarifications: unknown;
+  complement: unknown;
+  attachment_path: string | null;
+  attachment_name: string | null;
+};
+
+export type RequestState = "en_attente" | "a_completer" | "validee" | "refusee";
+
+// « À compléter » = refus avec le motif « à clarifier » : l'auteur peut répondre et renvoyer
+export function stateOf(r: Pick<RequestRow, "status" | "rejection_category">): RequestState {
+  if (r.status === "en attente") return "en_attente";
+  if (r.status === "validée") return "validee";
+  return r.rejection_category === "à clarifier" ? "a_completer" : "refusee";
+}
+
+export const STATE_LABEL: Record<RequestState, string> = {
+  en_attente: "En attente",
+  a_completer: "À compléter",
+  validee: "Validée",
+  refusee: "Refusée",
+};
+
+export const refOf = (r: Pick<RequestRow, "created_at" | "ref_number">) =>
+  `#D-${new Date(r.created_at).getFullYear()}-${String(r.ref_number).padStart(3, "0")}`;
+
+export const titleOf = (r: Pick<RequestRow, "title" | "content">) => r.title?.trim() || r.content.slice(0, 80);
+
+export async function fetchMyRequests(email: string): Promise<RequestRow[]> {
+  const { data, error } = await sb
+    .from("submissions")
+    .select("*")
+    .ilike("submitted_by_email", email)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as RequestRow[];
+}
+
+// La base ne renvoie que ce que la visibilité choisie permet de lire (règle RLS)
+export async function fetchValidatedRequests(): Promise<RequestRow[]> {
+  const { data, error } = await sb
+    .from("submissions")
+    .select("*")
+    .eq("status", "validée")
+    .order("decided_at", { ascending: false, nullsFirst: false });
+  if (error) throw error;
+  return (data ?? []) as RequestRow[];
+}
+
+export const ATTACHMENT_BUCKET = "submission-attachments";
+export const MAX_PDF_BYTES = 20 * 1024 * 1024;
+
+export type NewRequest = {
+  author_name: string;
+  team: string; // « auto » (collaborateur) ou « Admin » : la base impose la vraie équipe à l'enregistrement
+  title: string;
+  content: string;
+  blocking: boolean;
+  visibility: Visibility;
+  theme: Theme | null;
+  confidential_identity: boolean;
+  validator_type: "manager" | "admin";
+};
+
+export async function createRequest(input: NewRequest, file?: File | null) {
+  let attachment_path: string | null = null;
+  let attachment_name: string | null = null;
+  if (file) {
+    if (file.type !== "application/pdf") throw new Error("Seuls les fichiers PDF sont acceptés.");
+    if (file.size > MAX_PDF_BYTES) throw new Error("Le fichier dépasse 20 Mo.");
+    const { data: u } = await sb.auth.getUser();
+    if (!u.user) throw new Error("Session expirée : reconnecte-toi.");
+    attachment_path = `${u.user.id}/${crypto.randomUUID()}.pdf`;
+    attachment_name = file.name.slice(0, 200);
+    const { error: upErr } = await sb.storage
+      .from(ATTACHMENT_BUCKET)
+      .upload(attachment_path, file, { contentType: "application/pdf" });
+    if (upErr) throw upErr;
+  }
+  const { error } = await sb.from("submissions").insert({
+    ...input,
+    status: "en attente",
+    attachment_path,
+    attachment_name,
+  });
+  if (error) throw error;
+}

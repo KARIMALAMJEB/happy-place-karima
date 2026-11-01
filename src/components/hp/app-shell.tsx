@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Database, LayoutDashboard, LogOut, Menu, Repeat, X } from "lucide-react";
+import { ClipboardList, Database, LayoutDashboard, LogOut, Menu, Repeat, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { HpButton, HpIconButton } from "@/components/hp/button";
 import { signOut, type AppRole } from "@/lib/auth";
@@ -32,6 +32,7 @@ function Sidebar({ role, ouvert, onFermer }: { role: AppRole; ouvert: boolean; o
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const actifTableau = pathname === "/";
   const actifGestion = pathname.startsWith("/manage");
+  const actifDemandes = pathname.startsWith("/demande") || pathname.startsWith("/deposer");
   const lien = (actif: boolean) =>
     cn(
       "label-13 flex h-12 items-center gap-3 border-l-4 px-5",
@@ -57,6 +58,10 @@ function Sidebar({ role, ouvert, onFermer }: { role: AppRole; ouvert: boolean; o
         <Link to="/" aria-current={actifTableau ? "page" : undefined} className={lien(actifTableau)}>
           <LayoutDashboard size={18} aria-hidden />
           <span className="flex-1">Tableau de bord</span>
+        </Link>
+        <Link to="/demandes" aria-current={actifDemandes ? "page" : undefined} className={lien(actifDemandes)}>
+          <ClipboardList size={18} aria-hidden />
+          <span className="flex-1">Demandes</span>
         </Link>
         {role === "admin" && (
           <Link to="/manage/news" aria-current={actifGestion ? "page" : undefined} className={lien(actifGestion)}>
