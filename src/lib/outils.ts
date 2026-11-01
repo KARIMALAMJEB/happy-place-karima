@@ -1,5 +1,5 @@
 // Boîte à outils de démonstration (reprise du prototype) : process, outils, infos RH et assistance.
-// Contenu statique en lecture : l'ajout et la modification par l'admin viendront avec une table dédiée (voir Journal des modifications V2).
+// Contenu du code en lecture seule. Les ressources ajoutées par l'admin viennent de la table toolbox_resources (voir src/lib/toolbox.ts).
 
 import { BookOpen, IdCard, LifeBuoy, Wrench, type LucideIcon } from "lucide-react";
 
@@ -13,6 +13,8 @@ export interface Ressource {
   page?: "annuaire" | "demandes" | "actualites"; // page de Happy Place
   url?: string; // lien externe
   pdf?: { nom: string; url: string }; // pièce jointe ajoutée par l'admin (en mémoire)
+  pdfPath?: string; // PDF stocké pour une ressource ajoutée par l'admin
+  ajoutee?: boolean; // ressource ajoutée par l'admin dans la base
   type?: "process" | "document"; // contenu détaillé, lisible dans la Boîte à outils
   texte?: string;
 }

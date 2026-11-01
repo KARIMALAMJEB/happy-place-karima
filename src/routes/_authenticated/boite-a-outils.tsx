@@ -1,11 +1,15 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { ArrowRight, Search } from "lucide-react";
+import { ArrowRight, Plus, Search } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { useRouteContext } from "@tanstack/react-router";
 import { useState } from "react";
 import { HpButton } from "@/components/hp/button";
 import { Picto } from "@/components/hp/encadre";
 import { HpPage, useOwnProfile } from "@/components/hp/page";
 import { TabButton, TabList } from "@/components/hp/tabs";
+import { RessourceForm } from "@/components/hp/ressource-form";
+import { enRessource, fetchRessourcesDb, urlPdf, type RessourceDb } from "@/lib/toolbox";
 import { BOITE_A_OUTILS, ICONES_OUTILS, RESSOURCES, ressourceVisible, type CategorieOutil, type Ressource } from "@/lib/outils";
 
 export const Route = createFileRoute("/_authenticated/boite-a-outils")({
@@ -51,6 +55,17 @@ function TitreCarte({ r }: { r: Ressource }) {
         {r.titre}
       </Link>
     );
+  if (r.pdfPath)
+    return (
+      <button
+        type="button"
+        onClick={() => urlPdf(r.pdfPath!).then((u) => window.open(u, "_blank", "noopener")).catch(() => toast.error("Le PDF n'a pas pu être ouvert."))}
+        className={classe + " cursor-pointer text-left"}
+      >
+        {r.titre}
+        <span className="sr-only"> (PDF, nouvel onglet)</span>
+      </button>
+    );
   if (r.url || r.pdf)
     return (
       <a href={r.pdf?.url ?? r.url} target="_blank" rel="noreferrer" className={classe}>
@@ -78,7 +93,11 @@ function Page() {
   const [recherche, setRecherche] = useState("");
   const q = sansAccents(recherche.trim());
   const categories = BOITE_A_OUTILS.filter((c) => filtre === "tous" || c === filtre);
-  const visibles = RESSOURCES.filter(
+  const [formulaire, setFormulaire] = useState<RessourceDb | "nouvelle" | null>(null);
+  const ajoutees = useQuery({ queryKey: ["toolbox_resources"], queryFn: fetchRessourcesDb, retry: false });
+  const bruts = ajoutees.data ?? [];
+  const toutes = [...RESSOURCES, ...bruts.map(enRessource)];
+  const visibles = toutes.filter(
     (r) => ressourceVisible(r, role, [team]) && (!q || sansAccents(`${r.titre} ${r.description} ${r.texte ?? ""}`).includes(q)),
   );
 
@@ -92,8 +111,17 @@ function Page() {
             {typeDe(r)}
             {admin && ` · Portée : ${libellePortee(r.portee)}`}
           </p>
+          {admin && r.ajoutee && (
+            <button
+              type="button"
+              onClick={() => setFormulaire(bruts.find((d) => d.id === r.id) ?? null)}
+              className="relative z-10 mt-1 self-start text-[14px] leading-5 font-semibold text-anthracite underline underline-offset-4"
+            >
+              Modifier
+            </button>
+          )}
         </div>
-        {(r.texte || r.page || r.url || r.pdf) && <ArrowRight size={18} aria-hidden className="mt-1 shrink-0 text-anthracite" />}
+        {(r.texte || r.page || r.url || r.pdf || r.pdfPath) && <ArrowRight size={18} aria-hidden className="mt-1 shrink-0 text-anthracite" />}
       </div>
     </li>
   );
@@ -106,6 +134,12 @@ function Page() {
           <h1 className="text-[36px] leading-[44px]">Boîte à outils</h1>
           <p className="text-[16px] leading-6">Les process, outils et informations utiles au quotidien chez Bigger Boat.</p>
         </div>
+        <div className="flex flex-wrap items-center gap-3">
+        {admin && (
+          <HpButton role="principal" icon={Plus} onClick={() => setFormulaire("nouvelle")}>
+            AJOUTER UNE RESSOURCE
+          </HpButton>
+        )}
         <label className="relative flex items-center">
           <span className="sr-only">Rechercher dans la boîte à outils</span>
           <Search size={16} aria-hidden className="pointer-events-none absolute left-3 text-ink-2" />
@@ -117,7 +151,9 @@ function Page() {
             className="h-11 w-72 border border-field bg-white pr-3 pl-9 text-[14px] text-ink placeholder:text-ink-2"
           />
         </label>
+        </div>
       </header>
+      {formulaire && <RessourceForm key={formulaire === "nouvelle" ? "n" : formulaire.id} initial={formulaire === "nouvelle" ? null : formulaire} onClose={() => setFormulaire(null)} />}
 
       {filtre === "tous" && (
         <section aria-labelledby="assistance-titre" className="flex flex-col gap-4 border border-line border-l-4 border-l-anthracite bg-neutral-1 px-6 py-5">
