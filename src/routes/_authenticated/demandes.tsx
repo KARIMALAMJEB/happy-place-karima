@@ -7,6 +7,7 @@ import { Encadre } from "@/components/hp/encadre";
 import { HpButton } from "@/components/hp/button";
 import { HpPage, useOwnProfile } from "@/components/hp/page";
 import { ReglesArbitrage } from "@/components/hp/regles";
+import { TabButton, TabList } from "@/components/hp/tabs";
 import { BandeauFiltre, RecapTuiles, buildTuiles, type Onglet } from "@/components/hp/recap";
 import { DELAI_RELANCE, Tableau, joursOuvres } from "@/components/hp/demandes-ui";
 import {
@@ -19,6 +20,8 @@ import {
   remindRequest,
   refOf,
   stateOf,
+  STATE_LABEL,
+  type RequestState,
   titleOf,
   type RequestRow,
 } from "@/lib/requests";
@@ -35,6 +38,7 @@ function DemandesPage() {
   const [onglet, setOnglet] = useState<Onglet>(role === "collaborateur" ? "mes" : "traiter");
   const [equipe, setEquipe] = useState("");
   const [tuile, setTuile] = useState<string | null>(null);
+  const [statut, setStatut] = useState<"tous" | RequestState>("tous");
   const mes = useQuery({ queryKey: ["requests", "mine", email], enabled: !!email, queryFn: () => fetchMyRequests(email) });
   const atraiter = useQuery({ queryKey: ["requests", "review"], enabled: role !== "collaborateur", queryFn: fetchToReview });
   const validees = useQuery({ queryKey: ["requests", "validated"], queryFn: fetchValidatedRequests });
@@ -51,12 +55,32 @@ function DemandesPage() {
   const filtrer = (l: RequestRow[], pour: Onglet) => (actif && actif.onglet === pour ? l.filter(actif.garde) : l);
   const filtrees = filtrer((validees.data ?? []).filter((r) => !equipe || r.team === equipe), "validees");
 
+  const base: RequestRow[] =
+    onglet === "traiter" ? filtrer(aTraiterL, "traiter")
+    : onglet === "decidees" ? decideesL
+    : onglet === "toutes" ? (toutes.data ?? [])
+    : onglet === "mes" ? filtrer(mesL, "mes")
+    : filtrees;
+  const nStatut = (e: RequestState) => base.filter((r) => stateOf(r) === e).length;
+  const lignes = statut === "tous" ? base : base.filter((r) => stateOf(r) === statut);
+  const ETATS: RequestState[] = ["en_attente", "a_completer", "validee", "refusee"];
+  const barreStatuts = (
+    <div className="overflow-x-auto border-t border-line px-6 py-3">
+      <TabList label="Filtrer par statut">
+        <TabButton active={statut === "tous"} onClick={() => setStatut("tous")}>{`Toutes (${base.length})`}</TabButton>
+        {ETATS.map((e) => (
+          <TabButton key={e} active={statut === e} onClick={() => setStatut(e)}>{`${STATE_LABEL[e]} (${nStatut(e)})`}</TabButton>
+        ))}
+      </TabList>
+    </div>
+  );
+
   const tab = (id: Onglet, label: string, n?: number) => (
     <button
       type="button"
       role="tab"
       aria-selected={onglet === id}
-      onClick={() => { setOnglet(id); setTuile(null); }}
+      onClick={() => { setOnglet(id); setTuile(null); setStatut("tous"); }}
       className={cn(
         "label h-11 border-b-2 px-4",
         onglet === id ? "border-b-anthracite bg-neutral-1 text-anthracite" : "border-b-transparent text-ink-2 hover:text-anthracite",
@@ -84,7 +108,7 @@ function DemandesPage() {
             <HpButton role="publie" icon={Plus}>DÉPOSER UNE DEMANDE</HpButton>
           </Link>
         </div>
-        <RecapTuiles tuiles={tuiles} actif={tuile} onChoisir={(t) => { if (!t) return setTuile(null); setOnglet(t.onglet); setTuile(t.id); }} />
+        <RecapTuiles tuiles={tuiles} actif={tuile} onChoisir={(t) => { setStatut("tous"); if (!t) return setTuile(null); setOnglet(t.onglet); setTuile(t.id); }} />
       </section>
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
@@ -116,24 +140,25 @@ function DemandesPage() {
           }
         >
           {bandeauFiltre}
+          {barreStatuts}
           {onglet === "traiter" ? (
-            <Tableau lignes={filtrer(aTraiterL, "traiter")} perspective="valideur" vide="Aucune demande n'attend ta décision." />
+            <Tableau lignes={lignes} perspective="valideur" vide="Aucune demande dans ce statut." />
           ) : onglet === "decidees" ? (
-            <Tableau lignes={decideesL} perspective="valideur" vide="Aucune demande décidée pour le moment." />
+            <Tableau lignes={lignes} perspective="valideur" vide="Aucune demande dans ce statut." />
           ) : onglet === "toutes" ? (
-            <Tableau lignes={toutes.data ?? []} perspective="valideur" vide="Aucune demande." />
+            <Tableau lignes={lignes} perspective="valideur" vide="Aucune demande dans ce statut." />
           ) : onglet === "mes" ? (
             mes.isLoading ? (
               <p className="px-6 py-6 text-ink-2">Chargement…</p>
             ) : mes.isError ? (
               <p role="alert" className="px-6 py-6">Tes demandes sont indisponibles pour le moment.</p>
             ) : (
-              <Tableau lignes={filtrer(mesL, "mes")} perspective="auteur" vide="Aucune demande dans cet onglet." />
+              <Tableau lignes={lignes} perspective="auteur" vide="Aucune demande dans ce statut." />
             )
           ) : validees.isLoading ? (
             <p className="px-6 py-6 text-ink-2">Chargement…</p>
           ) : (
-            <Tableau lignes={filtrees} perspective="lecteur" vide="Aucune demande ne correspond à ces filtres." />
+            <Tableau lignes={lignes} perspective="lecteur" vide="Aucune demande ne correspond à ces filtres." />
           )}
         </Encadre>
         <ReglesArbitrage />
