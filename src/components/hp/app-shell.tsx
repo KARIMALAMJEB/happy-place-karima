@@ -1,8 +1,10 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useRouteContext, useRouterState } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { ClipboardList, Database, LayoutDashboard, LogOut, Menu, Repeat, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { HpButton, HpIconButton } from "@/components/hp/button";
 import { signOut, type AppRole } from "@/lib/auth";
+import { fetchMyRequests, fetchToReview, nonLue, stateOf } from "@/lib/requests";
 import { cn } from "@/lib/utils";
 
 // Coque V2 (portée du prototype) : menu latéral, en-tête, pied de page.
@@ -28,9 +30,33 @@ function SkipLink() {
   );
 }
 
+// Compteur carré du menu : anthracite, avec nom accessible complet
+function Count({ children, label }: { children: number; label: string }) {
+  return (
+    <span role="status" aria-label={label} className="label inline-flex h-5 min-w-5 items-center justify-center bg-anthracite px-1 tracking-normal text-on-anthracite">
+      {children}
+    </span>
+  );
+}
+
+// Même définition que les tuiles « À traiter » / « À valider » de l'accueil
+function useCompteurDemandes(role: AppRole) {
+  const { email } = useRouteContext({ from: "/_authenticated" });
+  const mail = (email ?? "").toLowerCase();
+  const mes = useQuery({ queryKey: ["requests", "mine", mail], enabled: !!mail && role === "collaborateur", queryFn: () => fetchMyRequests(mail) });
+  const aValider = useQuery({ queryKey: ["requests", "review"], enabled: role !== "collaborateur", queryFn: fetchToReview });
+  if (role === "collaborateur") {
+    const n = (mes.data ?? []).filter((r) => stateOf(r) === "a_completer" || nonLue(r)).length;
+    return { n, label: `${n} demande${n > 1 ? "s" : ""} à traiter : réponses non lues et demandes à compléter` };
+  }
+  const n = aValider.data?.length ?? 0;
+  return { n, label: `${n} demande${n > 1 ? "s" : ""} à valider` };
+}
+
 function Sidebar({ role, ouvert, onFermer }: { role: AppRole; ouvert: boolean; onFermer: () => void }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const actifTableau = pathname === "/";
+  const compteur = useCompteurDemandes(role);
   const actifGestion = pathname.startsWith("/manage");
   const actifDemandes = pathname.startsWith("/demande") || pathname.startsWith("/deposer");
   const lien = (actif: boolean) =>
@@ -62,6 +88,7 @@ function Sidebar({ role, ouvert, onFermer }: { role: AppRole; ouvert: boolean; o
         <Link to="/demandes" aria-current={actifDemandes ? "page" : undefined} className={lien(actifDemandes)}>
           <ClipboardList size={18} aria-hidden />
           <span className="flex-1">Demandes</span>
+          {compteur.n > 0 && <Count label={compteur.label}>{compteur.n}</Count>}
         </Link>
         {role === "admin" && (
           <Link to="/manage/news" aria-current={actifGestion ? "page" : undefined} className={lien(actifGestion)}>
@@ -82,7 +109,7 @@ function Sidebar({ role, ouvert, onFermer }: { role: AppRole; ouvert: boolean; o
   );
 }
 
-function Header({ name, role, menuOuvert, onMenu }: { name: string; role: AppRole; menuOuvert: boolean; onMenu: () => void }) {
+function Header({ name, role, sousTitre, menuOuvert, onMenu }: { name: string; role: AppRole; sousTitre?: string | null; menuOuvert: boolean; onMenu: () => void }) {
   return (
     <header className="fixed top-0 right-0 left-0 z-10 flex h-16 items-center justify-between gap-4 border-b border-line bg-white px-4 lg:left-64 lg:gap-6 lg:px-8">
       <div className="flex items-center gap-3 lg:gap-6">
@@ -105,7 +132,7 @@ function Header({ name, role, menuOuvert, onMenu }: { name: string; role: AppRol
           </span>
           <span className="hidden flex-col lg:flex">
             <span className="text-[14px] leading-5 font-semibold text-ink">{name}</span>
-            <span className="text-[12px] leading-4 text-ink-2">{ROLE_LABEL[role]}</span>
+            <span className="text-[12px] leading-4 text-ink-2">{sousTitre ?? ROLE_LABEL[role]}</span>
           </span>
           <span className="sr-only lg:hidden">{name}</span>
         </div>
@@ -125,7 +152,7 @@ function Footer() {
   );
 }
 
-export function AppShell({ name, role, children }: { name: string; role: AppRole; children: ReactNode }) {
+export function AppShell({ name, role, equipe, children }: { name: string; role: AppRole; equipe?: string | null; children: ReactNode }) {
   // Mobile : menu latéral en tiroir, refermé à chaque changement de page et avec Échap
   const [menu, setMenu] = useState(false);
   const chemin = useRouterState({ select: (s) => s.location.href });
@@ -149,7 +176,7 @@ export function AppShell({ name, role, children }: { name: string; role: AppRole
           className="fixed inset-0 z-40 bg-anthracite/50 lg:hidden"
         />
       )}
-      <Header name={name} role={role} menuOuvert={menu} onMenu={() => setMenu(true)} />
+      <Header name={name} role={role} sousTitre={equipe} menuOuvert={menu} onMenu={() => setMenu(true)} />
       <div className="flex min-h-screen flex-col pt-16 lg:pl-64">
         <main id="contenu" tabIndex={-1} className="flex-1 focus:outline-none">
           <div className="mx-auto flex max-w-[1240px] flex-col gap-6 px-4 py-4 lg:px-8 lg:py-8">{children}</div>

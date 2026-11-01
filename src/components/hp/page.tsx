@@ -32,6 +32,6 @@ export function useOwnProfile() {
 // Page V2 : coque (menu, en-tête, pied de page) + contenu
 export function HpPage({ children }: { children: ReactNode }) {
   const { role } = useRouteContext({ from: "/_authenticated" });
-  const { fullName } = useOwnProfile();
-  return <AppShell name={fullName} role={role}>{children}</AppShell>;
+  const { fullName, team } = useOwnProfile();
+  return <AppShell name={fullName} role={role} equipe={team}>{children}</AppShell>;
 }
