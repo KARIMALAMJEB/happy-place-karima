@@ -37,6 +37,23 @@ function journaliser(role: Profil["id"], r: ReponseAssistant, erreur?: string) {
   return r;
 }
 export const journalTechnique = (): readonly LigneJournal[] => JOURNAL;
+// Secrets Cloudflare : process.env d'abord, puis l'environnement du Worker
+let ENV_WORKER: Record<string, unknown> | undefined;
+async function chargerEnvWorker() {
+  if (ENV_WORKER) return;
+  try {
+    const nom = "cloudflare:workers";
+    ENV_WORKER = ((await import(/* @vite-ignore */ nom)) as { env?: Record<string, unknown> }).env ?? {};
+  } catch {
+    ENV_WORKER = {};
+  }
+}
+const secret = (nom: string): string | undefined => {
+  const v = process.env[nom] ?? ENV_WORKER?.[nom];
+  return typeof v === "string" && v.trim() ? v.trim() : undefined;
+};
+// DIAGNOSTIC TEMPORAIRE : ajoute la cause technique à la réponse (à retirer après les tests)
+const diag = (r: ReponseAssistant, why: string): ReponseAssistant => ({ ...r, answer: `${r.answer} [diag : ${why}]` });
 const PREFIXE_SANS_IA = "Voici ce que j'ai trouvé dans Happy Place : ";
 const MODELE_PAR_DEFAUT = "@cf/mistralai/mistral-small-3.1-24b-instruct";
 const DELAI_MS = 15_000;
@@ -75,10 +92,10 @@ function lireTexte(json: unknown): string | undefined {
 }
 
 async function appelerModele(question: string, extraits: Extrait[]): Promise<string> {
-  const compte = process.env.CLOUDFLARE_ACCOUNT_ID?.trim();
-  const jeton = process.env.CLOUDFLARE_API_TOKEN?.trim();
+  const compte = secret("CLOUDFLARE_ACCOUNT_ID");
+  const jeton = secret("CLOUDFLARE_API_TOKEN");
   if (!compte || !jeton) throw new Error("jeton absent");
-  const modele = process.env.CLOUDFLARE_AI_MODEL?.trim() || MODELE_PAR_DEFAUT;
+  const modele = secret("CLOUDFLARE_AI_MODEL") || MODELE_PAR_DEFAUT;
   const donnees = extraits.map((e, i) => `[Extrait ${i + 1}] ${e.type} « ${e.titre} »\n${e.texte.slice(0, 3000)}`).join("\n\n");
   const controle = new AbortController();
   const minuteur = setTimeout(() => controle.abort(), DELAI_MS);
@@ -117,12 +134,13 @@ export async function repondre(question: string, profil: Profil, actualites: Act
   const extraits = q ? rechercher(q, docs).filter((e) => lisibles.has(e.lien)) : [];
   const rien = (ia: boolean): ReponseAssistant => ({ answer: RIEN, sources: [], mode: "aucun-resultat", ia, contact: contactPour() });
 
-  const avecIa = !!process.env.CLOUDFLARE_API_TOKEN?.trim();
+  await chargerEnvWorker();
+  const avecIa = !!secret("CLOUDFLARE_API_TOKEN");
 
   // Sans modèle : seuls les extraits qui passent le seuil strict sont rendus mot pour mot
   if (!avecIa) {
     if (extraits.length === 0)
-      return journaliser(profil.id, dansLePerimetre(q) ? rien(false) : { answer: HORS_SUJET, sources: [], mode: "hors-sujet", ia: false, contact: contactPour() });
+      return journaliser(profil.id, dansLePerimetre(q) ? diag(rien(false), "jeton absent du serveur") : { answer: HORS_SUJET, sources: [], mode: "hors-sujet", ia: false, contact: contactPour() });
     return journaliser(profil.id, sansIa(extraits));
   }
 
@@ -139,7 +157,7 @@ export async function repondre(question: string, profil: Profil, actualites: Act
       .filter((d) => d.type === "Guide")
       .slice(0, 12)
       .map((d) => ({ titre: d.titre, type: d.type, lien: d.lien, score: 0, phrases: d.phrases.slice(0, 2), texte: d.phrases.join(" ") }));
-    if (contexte.length === 0) return journaliser(profil.id, rien(false));
+    if (contexte.length === 0) return journaliser(profil.id, diag(rien(false), "aucun contenu lisible"));
   }
   try {
     const texte = await appelerModele(q, contexte);
@@ -147,7 +165,8 @@ export async function repondre(question: string, profil: Profil, actualites: Act
     return journaliser(profil.id, { answer: texte, sources: (extraits.length ? extraits : contexte.filter((c) => c.score > 0)).slice(0, 3).map(versSource), mode: "ia", ia: true });
   } catch (e) {
     // Quota épuisé, réseau, délai dépassé : le meilleur extrait plutôt qu'un plantage (seul le type d'erreur est journalisé)
-    return journaliser(profil.id, extraits.length ? sansIa(extraits) : rien(false), e instanceof Error ? e.message.slice(0, 40) : "erreur");
+    const why = e instanceof Error ? e.message.slice(0, 80) : "erreur";
+    return journaliser(profil.id, extraits.length ? diag(sansIa(extraits), why) : diag(rien(false), why), why.slice(0, 40));
   }
 }
 
