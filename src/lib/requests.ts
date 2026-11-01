@@ -43,6 +43,8 @@ export type RequestRow = {
   complement: unknown;
   attachment_path: string | null;
   attachment_name: string | null;
+  author_seen_at: string | null;
+  reminded_at: string | null;
 };
 
 export type RequestState = "en_attente" | "a_completer" | "validee" | "refusee";
@@ -148,17 +150,21 @@ export const REJECTION_CATEGORIES = ["en désaccord avec les process", "doublon"
 export type Decision =
   | { kind: "valider" }
   | { kind: "refuser"; category: (typeof REJECTION_CATEGORIES)[number]; note: string }
-  | { kind: "preciser"; note: string };
+  | { kind: "preciser"; questions: string[] };
 
 export async function decideRequest(id: string, d: Decision) {
   const patch =
     d.kind === "valider"
       ? { status: "validée", rejection_category: null, rejection_note: null }
-      : {
-          status: "refusée",
-          rejection_category: d.kind === "preciser" ? "à clarifier" : d.category,
-          rejection_note: d.note.trim().slice(0, 500),
-        };
+      : d.kind === "preciser"
+        ? {
+            status: "refusée",
+            rejection_category: "à clarifier",
+            // Le texte brut part dans l'e-mail ; la liste structurée sert à l'écran de réponse
+            rejection_note: d.questions.map((q, i) => `${i + 1}. ${q.trim()}`).join("\n").slice(0, 500),
+            clarifications: d.questions.map((q) => q.trim()),
+          }
+        : { status: "refusée", rejection_category: d.category, rejection_note: d.note.trim().slice(0, 500) };
   const { error } = await sb.from("submissions").update(patch).eq("id", id);
   if (error) throw error;
 }
@@ -173,10 +179,16 @@ export async function updateFollowUp(
 
 export const MAX_JUSTIFICATIFS = 4;
 export type Justificatif = { path: string; name: string };
-export type Complement = { reponses?: Justificatif[]; infos?: string | null; date?: string };
+export type Reponse = { question: string; reponse: string };
+export type Complement = { reponses?: (Reponse & Partial<Justificatif>)[]; fichiers?: Justificatif[]; infos?: string | null; date?: string };
+
+export const questionsOf = (r: Pick<RequestRow, "clarifications" | "rejection_note">): string[] =>
+  Array.isArray(r.clarifications) && r.clarifications.length
+    ? (r.clarifications as string[])
+    : r.rejection_note ? [r.rejection_note] : [];
 
 // L'auteur répond après une demande de précisions : PDF déposés dans son dossier, puis RPC contrôlée côté base
-export async function completeRequest(id: string, answer: string, files: File[] = []) {
+export async function completeRequest(id: string, reponses: Reponse[], infos: string, files: File[] = []) {
   if (files.length > MAX_JUSTIFICATIFS) throw new Error(`${MAX_JUSTIFICATIFS} documents au maximum.`);
   const pieces: Justificatif[] = [];
   if (files.length) {
@@ -191,7 +203,7 @@ export async function completeRequest(id: string, answer: string, files: File[] 
       pieces.push({ path, name: f.name.slice(0, 200) });
     }
   }
-  const { error } = await sb.rpc("complete_submission", { _id: id, _answers: pieces, _infos: answer.trim() });
+  const { error } = await sb.rpc("complete_submission", { _id: id, _answers: reponses, _infos: infos.trim(), _files: pieces });
   if (error) throw error;
 }
 
@@ -207,3 +219,17 @@ export async function fetchAllRequests(): Promise<RequestRow[]> {
   if (error) throw error;
   return (data ?? []) as RequestRow[];
 }
+
+// Relance : la base vérifie le délai de 5 jours ouvrés
+export async function remindRequest(id: string) {
+  const { error } = await sb.rpc("remind_submission", { _id: id });
+  if (error) throw error;
+}
+
+// L'auteur a lu la décision (point « Réponse non lue »)
+export async function markSeen(id: string) {
+  await sb.rpc("mark_submission_seen", { _id: id });
+}
+
+export const nonLue = (r: Pick<RequestRow, "decided_at" | "author_seen_at">) =>
+  !!r.decided_at && (!r.author_seen_at || new Date(r.author_seen_at) < new Date(r.decided_at));

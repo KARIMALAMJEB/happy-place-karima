@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, FileText, MessageSquareMore, Send, Upload, X } from "lucide-react";
+import { Check, FileText, MessageSquareMore, Plus, Send, Upload, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { HpButton } from "@/components/hp/button";
@@ -15,6 +15,9 @@ import {
   MAX_PDF_BYTES,
   completeRequest,
   type Complement,
+  markSeen,
+  nonLue,
+  questionsOf,
   decideRequest,
   fetchRequest,
   refOf,
@@ -57,7 +60,9 @@ function DemandeDetail() {
   const [categorie, setCategorie] = useState<(typeof REJECTION_CATEGORIES)[number]>("autre");
   const [mode, setMode] = useState<"refuser" | "preciser" | null>(null);
   const [erreur, setErreur] = useState("");
-  const [reponse, setReponse] = useState("");
+  const [questions, setQuestions] = useState<string[]>([""]);
+  const [reponses, setReponses] = useState<string[]>([]);
+  const [infos, setInfos] = useState("");
   const [fichiers, setFichiers] = useState<File[]>([]);
   const [erreurFichier, setErreurFichier] = useState("");
   const [suivi, setSuivi] = useState<FollowUp | "">("");
@@ -73,6 +78,13 @@ function DemandeDetail() {
     setTerminee(r.done);
   }, [r]);
 
+  // L'auteur ouvre sa demande : la décision est marquée comme lue
+  useEffect(() => {
+    if (r && (r.submitted_by_email ?? "").toLowerCase() === email && nonLue(r)) {
+      markSeen(r.id).then(() => qc.invalidateQueries({ queryKey: ["requests"] }));
+    }
+  }, [r, email, qc]);
+
   const refresh = () => qc.invalidateQueries({ queryKey: ["requests"] });
   const onError = (e: unknown) => toast.error(e instanceof Error ? e.message : "L'action a échoué");
 
@@ -82,6 +94,7 @@ function DemandeDetail() {
       toast.success(d.kind === "valider" ? "Demande validée" : d.kind === "preciser" ? "Précisions demandées" : "Demande refusée");
       setMode(null);
       setNote("");
+      setQuestions([""]);
       refresh();
     },
     onError,
@@ -92,8 +105,8 @@ function DemandeDetail() {
     onError,
   });
   const completer = useMutation({
-    mutationFn: () => completeRequest(id, reponse, fichiers),
-    onSuccess: () => { toast.success("Réponse envoyée"); setReponse(""); setFichiers([]); refresh(); },
+    mutationFn: () => completeRequest(id, questionsOf(r!).map((q, i) => ({ question: q, reponse: (reponses[i] ?? "").trim() })), infos, fichiers),
+    onSuccess: () => { toast.success("Réponse envoyée"); setReponses([]); setInfos(""); setFichiers([]); refresh(); },
     onError,
   });
   const pj = useMutation({
@@ -121,9 +134,17 @@ function DemandeDetail() {
 
   function envoyerDecision() {
     if (!mode) return;
+    if (mode === "preciser") {
+      const qs = questions.map((q) => q.trim()).filter(Boolean);
+      if (!qs.length) return setErreur("Ajoute au moins une question.");
+      if (qs.some((q) => q.length < 3)) return setErreur("Chaque question fait au moins 3 caractères.");
+      if (qs.map((q, i) => `${i + 1}. ${q}`).join("\n").length > 500) return setErreur("Les questions dépassent 500 caractères au total.");
+      setErreur("");
+      return decider.mutate({ kind: "preciser", questions: qs });
+    }
     if (note.trim().length < 5) return setErreur("Écris un message d'au moins 5 caractères.");
     setErreur("");
-    decider.mutate(mode === "preciser" ? { kind: "preciser", note } : { kind: "refuser", category: categorie, note });
+    decider.mutate({ kind: "refuser", category: categorie, note });
   }
 
   return (
@@ -158,9 +179,17 @@ function DemandeDetail() {
               </HpButton>
             </div>
           )}
-          {(etat === "refusee" || etat === "a_completer") && r.rejection_note && (
+          {etat === "a_completer" && questionsOf(r).length > 0 && (
+            <div className="border-l-4 border-line bg-neutral-1 px-4 py-3 text-[14px] leading-5">
+              <p className="font-semibold">Précisions demandées</p>
+              <ol className="mt-1 list-decimal pl-5">
+                {questionsOf(r).map((q, i) => <li key={i} className="whitespace-pre-wrap">{q.replace(/^\d+\.\s/, "")}</li>)}
+              </ol>
+            </div>
+          )}
+          {etat === "refusee" && r.rejection_note && (
             <p className="border-l-4 border-line bg-neutral-1 px-4 py-3 text-[14px] leading-5">
-              <span className="font-semibold">{etat === "a_completer" ? "Précisions demandées" : `Motif : ${r.rejection_category}`}</span>
+              <span className="font-semibold">Motif : {r.rejection_category}</span>
               <br />
               {r.rejection_note}
             </p>
@@ -168,13 +197,24 @@ function DemandeDetail() {
         </div>
       </Encadre>
 
-      {complement && (complement.infos || complement.reponses?.length) && (
+      {complement && (complement.infos || complement.reponses?.length || complement.fichiers?.length) && (
         <Encadre title="Réponse de l'auteur">
-          <div className="flex flex-col gap-3 p-6">
+          <div className="flex flex-col gap-4 p-6">
             {complement.date && <p className="text-[12px] leading-4 text-ink-2">Renvoyée le {fmt(complement.date)}</p>}
-            {complement.infos && <p className="text-[16px] leading-6 whitespace-pre-wrap text-ink">{complement.infos}</p>}
+            {(complement.reponses ?? []).filter((x) => x.question).map((x, i) => (
+              <div key={i} className="flex flex-col gap-1">
+                <p className="text-[12px] leading-4 text-ink-2">{i + 1}. {x.question.replace(/^\d+\.\s/, "")}</p>
+                <p className="text-[16px] leading-6 whitespace-pre-wrap text-ink">{x.reponse}</p>
+              </div>
+            ))}
+            {complement.infos && (
+              <div className="flex flex-col gap-1">
+                <p className="label text-ink-2">Informations complémentaires</p>
+                <p className="text-[16px] leading-6 whitespace-pre-wrap text-ink">{complement.infos}</p>
+              </div>
+            )}
             <div className="flex flex-wrap gap-3">
-              {(complement.reponses ?? []).map((j) => (
+              {[...(complement.fichiers ?? []), ...(complement.reponses ?? []).filter((x) => x.path).map((x) => ({ path: x.path!, name: x.name ?? "Document" }))].map((j) => (
                 <HpButton key={j.path} type="button" role="consulte" icon={FileText} disabled={pj.isPending} onClick={() => pj.mutate(j.path)}>
                   {j.name}
                 </HpButton>
@@ -187,8 +227,22 @@ function DemandeDetail() {
       {etat === "a_completer" && estAuteur && (
         <Encadre title="Compléter ma demande">
           <div className="flex flex-col gap-3 p-6">
-            <label htmlFor="reponse" className="label text-ink">Ta réponse</label>
-            <textarea id="reponse" className={`${champ} min-h-32 py-2`} value={reponse} maxLength={1000} onChange={(e) => setReponse(e.target.value)} />
+            {questionsOf(r).map((q, i) => (
+              <div key={i} className="flex flex-col gap-2">
+                <label htmlFor={`reponse-${i}`} className="text-[14px] leading-5 font-semibold text-ink">{i + 1}. {q.replace(/^\d+\.\s/, "")}</label>
+                <textarea
+                  id={`reponse-${i}`}
+                  className={`${champ} min-h-24 py-2`}
+                  value={reponses[i] ?? ""}
+                  maxLength={1000}
+                  onChange={(e) => setReponses(questionsOf(r).map((_, j) => (j === i ? e.target.value : (reponses[j] ?? ""))))}
+                />
+              </div>
+            ))}
+            <div className="flex flex-col gap-2">
+              <label htmlFor="infos" className="label text-ink">Informations complémentaires (facultatif)</label>
+              <textarea id="infos" className={`${champ} min-h-20 py-2`} value={infos} maxLength={1000} onChange={(e) => setInfos(e.target.value)} />
+            </div>
             <span className="label text-ink">Documents justificatifs (facultatif)</span>
             <label className="flex cursor-pointer flex-col items-center gap-2 border border-dashed border-field bg-neutral-1 px-6 py-6 text-center hover:bg-neutral-2">
               <Upload size={20} aria-hidden />
@@ -218,7 +272,7 @@ function DemandeDetail() {
               </p>
             ))}
             <div>
-              <HpButton type="button" role="publie" icon={Send} disabled={completer.isPending || reponse.trim().length < 3} onClick={() => completer.mutate()}>
+              <HpButton type="button" role="publie" icon={Send} disabled={completer.isPending || !questionsOf(r).every((_, i) => (reponses[i] ?? "").trim().length >= 2)} onClick={() => completer.mutate()}>
                 RENVOYER LA DEMANDE
               </HpButton>
             </div>
@@ -244,9 +298,40 @@ function DemandeDetail() {
                     </select>
                   </>
                 )}
-                <label htmlFor="note" className="label text-ink">{mode === "preciser" ? "Quelles précisions attends-tu ?" : "Explication pour l'auteur"}</label>
-                <textarea id="note" className={`${champ} min-h-28 py-2`} value={note} maxLength={500} onChange={(e) => setNote(e.target.value)} />
-                <span className="text-[12px] leading-4 text-ink-2">{note.length} / 500 caractères. L'auteur est prévenu par e-mail.</span>
+                {mode === "preciser" ? (
+                  <>
+                    <span className="label text-ink">Tes questions à l'auteur</span>
+                    {questions.map((q, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <span className="w-6 text-[14px] leading-5 text-ink-2">{i + 1}.</span>
+                        <input
+                          aria-label={`Question ${i + 1}`}
+                          className={champ}
+                          value={q}
+                          maxLength={200}
+                          onChange={(e) => setQuestions(questions.map((x, j) => (j === i ? e.target.value : x)))}
+                        />
+                        {questions.length > 1 && (
+                          <button type="button" aria-label={`Retirer la question ${i + 1}`} onClick={() => setQuestions(questions.filter((_, j) => j !== i))} className="flex size-11 shrink-0 items-center justify-center border border-line hover:bg-neutral-1">
+                            <X size={16} aria-hidden />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                    {questions.length < 5 && (
+                      <div>
+                        <HpButton type="button" role="consulte" icon={Plus} onClick={() => setQuestions([...questions, ""])}>AJOUTER UNE QUESTION</HpButton>
+                      </div>
+                    )}
+                    <span className="text-[12px] leading-4 text-ink-2">5 questions au maximum. L'auteur est prévenu par e-mail.</span>
+                  </>
+                ) : (
+                  <>
+                    <label htmlFor="note" className="label text-ink">Explication pour l'auteur</label>
+                    <textarea id="note" className={`${champ} min-h-28 py-2`} value={note} maxLength={500} onChange={(e) => setNote(e.target.value)} />
+                    <span className="text-[12px] leading-4 text-ink-2">{note.length} / 500 caractères. L'auteur est prévenu par e-mail.</span>
+                  </>
+                )}
                 {erreur && <p role="alert" className="text-[12px] font-semibold text-[#8E1A1F]">{erreur}</p>}
                 <div className="flex gap-3">
                   <HpButton type="button" role="principal" icon={Send} disabled={decider.isPending} onClick={envoyerDecision}>ENVOYER</HpButton>
