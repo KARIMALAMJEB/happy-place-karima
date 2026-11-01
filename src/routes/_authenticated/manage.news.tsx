@@ -13,6 +13,11 @@ import {
   TextArea,
   TextInput,
 } from "@/components/manage/crud-ui";
+import { Encadre } from "@/components/hp/encadre";
+import { HpButton } from "@/components/hp/button";
+import { POINTS, TraitStatut, type Ton } from "@/components/hp/statut";
+import { BarreFiltres, correspond, dansPeriode, equipesDe, type Periode } from "@/components/hp/filtres-liste";
+import { Newspaper, Plus } from "lucide-react";
 import { newsSchema, validate, type FieldErrors } from "@/lib/manage-schemas";
 import {
   createNews,
@@ -45,6 +50,8 @@ const newsStatusLabels: Record<string, string> = {
   publiée: "Publiée",
 };
 
+const tonDeStatut = (s: string): Ton => (s === "publiée" ? "vert" : "gris");
+
 const empty: NewsInput = { title: "", body: "", author: "Direction Recrutement", status: "brouillon" };
 
 function ManageNews() {
@@ -57,6 +64,17 @@ function ManageNews() {
   const [showLinkErrs, setShowLinkErrs] = useState(false);
 
   const list = useQuery({ queryKey: ["news", "all"], queryFn: fetchAllNews, retry: false });
+  const [fQ, setFQ] = useState("");
+  const [fEquipe, setFEquipe] = useState("");
+  const [fPeriode, setFPeriode] = useState<Periode>("");
+  const [fStatut, setFStatut] = useState("");
+  const visibles = (list.data ?? []).filter(
+    (n) =>
+      correspond(fQ, n.title, n.body, n.author, n.author_email, n.category) &&
+      (!fEquipe || n.author_team === fEquipe || (n.teams ?? []).includes(fEquipe)) &&
+      (!fStatut || n.status === fStatut) &&
+      dansPeriode(n.created_at, fPeriode),
+  );
   const invalidate = () => qc.invalidateQueries({ queryKey: ["news"] });
   const onError = (e: unknown) => toast.error((e as Error).message);
 
@@ -105,65 +123,93 @@ function ManageNews() {
 
   return (
     <section className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className=" text-[22px] leading-7 text-ink">
-          Actualités ({list.data?.length ?? 0})
-        </h2>
-        <button
-          onClick={() => {
-            setEditing(null);
-            setErrors({});
-            setMedia(emptyMedia());
-            setShowLinkErrs(false);
-            setForm({ ...empty });
-          }}
-          className="px-6 py-2 bg-anthracite text-on-anthracite label-13 "
-        >
-          + NOUVELLE ACTUALITÉ
-        </button>
-      </div>
-
-      {list.isLoading && <p className="text-[14px] leading-5 text-ink-2">Chargement…</p>}
-      {list.isError && (
-        <p className="text-[14px] leading-5 text-[#8E1A1F]">Impossible de charger les actualités.</p>
-      )}
-
-      <div className="space-y-2">
-        {list.data?.map((n) => (
-          <article
-            key={n.id}
-            className="flex flex-col sm:flex-row items-start justify-between gap-4 p-4 min-w-0 overflow-hidden bg-white border border-line"
+      <Encadre
+        icon={Newspaper}
+        title="Actualités"
+        subtitle="Toutes les actualités, brouillons compris"
+        compteur={`${visibles.length} sur ${list.data?.length ?? 0}`}
+        filtre={
+          <div className="flex w-full flex-col gap-3">
+            <BarreFiltres
+              recherche={fQ}
+              onRecherche={setFQ}
+              placeholder="Rechercher un titre, un auteur ou un mot"
+              equipe={fEquipe}
+              onEquipe={setFEquipe}
+              equipes={equipesDe((list.data ?? []).flatMap((n) => [n.author_team, ...(n.teams ?? [])]))}
+              periode={fPeriode}
+              onPeriode={setFPeriode}
+              actifs={!!(fQ || fEquipe || fPeriode || fStatut)}
+              onReinitialiser={() => { setFQ(""); setFEquipe(""); setFPeriode(""); setFStatut(""); }}
+            >
+              <select aria-label="Filtrer par statut" value={fStatut} onChange={(e) => setFStatut(e.target.value)} className="min-h-11 border border-field bg-white px-3 text-[14px] leading-5 text-ink">
+                <option value="">Tous les statuts</option>
+                <option value="brouillon">Brouillon</option>
+                <option value="publiée">Publiée</option>
+              </select>
+            </BarreFiltres>
+          </div>
+        }
+      >
+        <div className="flex justify-end border-b border-line px-6 py-3">
+          <HpButton
+            role="principal"
+            icon={Plus}
+            onClick={() => {
+              setEditing(null);
+              setErrors({});
+              setMedia(emptyMedia());
+              setShowLinkErrs(false);
+              setForm({ ...empty });
+            }}
           >
-            <div className="min-w-0 flex-1 space-y-2">
-              {n.image_path && <NewsImage path={n.image_path} alt={n.title} />}
-              <p className="text-[14px] leading-5 text-ink font-bold wrap-anywhere">{n.title}</p>
-              <p className="text-[14px] leading-5 text-ink-2 line-clamp-2 wrap-anywhere">{n.body}</p>
-              <NewsLinks links={n.links} />
-              <p className="text-[11px] label text-ink-2 uppercase mt-2">
-                 {newsStatusLabels[n.status] ?? n.status} • {n.author} • {timeAgo(n.created_at)}
-              </p>
-            </div>
-            <RowActions
-              onEdit={() => {
-                setEditing(n);
-                setErrors({});
-                setMedia(mediaFromNews(n));
-                setShowLinkErrs(false);
-                setForm({
-                  title: n.title,
-                  body: n.body ?? "",
-                  author: n.author ?? "",
-                  status: n.status,
-                });
-              }}
-              onDelete={() => setToDelete(n)}
-            />
-          </article>
-        ))}
-        {list.data?.length === 0 && (
-          <p className="text-[14px] leading-5 italic text-ink-2">Aucune actualité.</p>
+            NOUVELLE ACTUALITÉ
+          </HpButton>
+        </div>
+
+        {list.isLoading && <p className="px-6 py-4 text-[14px] leading-5 text-ink-2">Chargement…</p>}
+        {list.isError && (
+          <p className="px-6 py-4 text-[14px] leading-5 text-[#8E1A1F]">Impossible de charger les actualités.</p>
         )}
-      </div>
+
+        <div className="divide-y divide-line">
+          {visibles.map((n) => (
+            <article key={n.id} className="relative flex min-w-0 flex-col items-start justify-between gap-4 overflow-hidden py-4 pr-6 pl-7 sm:flex-row">
+              <TraitStatut ton={tonDeStatut(n.status)} />
+              <div className="min-w-0 flex-1 space-y-2">
+                {n.image_path && <NewsImage path={n.image_path} alt={n.title} />}
+                <p className="text-[14px] leading-5 font-bold text-ink wrap-anywhere">{n.title}</p>
+                <p className="line-clamp-2 text-[14px] leading-5 text-ink-2 wrap-anywhere">{n.body}</p>
+                <NewsLinks links={n.links} />
+                <p className="label inline-flex flex-wrap items-center gap-x-2 text-ink-2">
+                  <span aria-hidden className="size-2.5 shrink-0" style={{ backgroundColor: POINTS[tonDeStatut(n.status)] }} />
+                  {(newsStatusLabels[n.status] ?? n.status).toUpperCase()} · {n.author}{n.author_team ? ` · ${n.author_team}` : ""} · {timeAgo(n.created_at)}
+                </p>
+              </div>
+              <RowActions
+                onEdit={() => {
+                  setEditing(n);
+                  setErrors({});
+                  setMedia(mediaFromNews(n));
+                  setShowLinkErrs(false);
+                  setForm({
+                    title: n.title,
+                    body: n.body ?? "",
+                    author: n.author ?? "",
+                    status: n.status,
+                  });
+                }}
+                onDelete={() => setToDelete(n)}
+              />
+            </article>
+          ))}
+          {!list.isLoading && visibles.length === 0 && (
+            <p className="px-6 py-6 text-[14px] leading-5 text-ink-2 italic">
+              {(list.data?.length ?? 0) === 0 ? "Aucune actualité." : "Aucune actualité ne correspond à ces filtres."}
+            </p>
+          )}
+        </div>
+      </Encadre>
 
       {form && (
         <Modal title={editing ? "Modifier l'actualité" : "Nouvelle actualité"} onClose={close}>

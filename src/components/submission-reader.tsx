@@ -6,7 +6,7 @@ import { AttachmentLink } from "@/components/attachment-link";
 import { formatExactDate } from "@/components/expandable-card";
 import type { Submission } from "@/lib/dashboard";
 
-/** Grande fenêtre de lecture d'une soumission (focus piégé, Échap, clic fond). */
+/** Grande fenêtre de lecture d'une demande (focus piégé, Échap, clic fond). */
 export function SubmissionReader({
   submission: s,
   statusLabel,

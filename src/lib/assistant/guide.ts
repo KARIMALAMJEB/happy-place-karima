@@ -226,7 +226,7 @@ export const GUIDE: ArticleGuide[] = [
     profils: ["admin"],
     page: "manage/users",
     texte:
-      "En tant qu'admin, tu gères les équipes et les personnes autorisées dans le menu « Gestion des données », onglet « Équipes et utilisateurs ». Seules les personnes présentes dans cette liste blanche peuvent se connecter à Happy Place. Cette page permet de créer et modifier les équipes, d'ajouter des utilisateurs, de leur donner un rôle et une équipe, d'attribuer des équipes à un manager, de modifier un nom et de programmer un départ. Les onglets voisins, Actualités et Soumissions, servent à gérer les contenus.",
+      "En tant qu'admin, tu gères les équipes et les personnes autorisées dans le menu « Gestion des données », onglet « Équipes et utilisateurs ». Seules les personnes présentes dans cette liste blanche peuvent se connecter à Happy Place. Cette page permet de créer et modifier les équipes, d'ajouter des utilisateurs, de leur donner un rôle et une équipe, d'attribuer des équipes à un manager, de modifier un nom et de programmer un départ. Chaque personne est une ligne : on clique sur « Modifier » pour changer son nom, son rôle, son équipe, les équipes qu'un manager encadre ou programmer son départ. Des filtres (nom, équipe, rôle) aident à retrouver quelqu'un. Les onglets voisins, Actualités et Demandes, servent à retrouver et corriger les contenus, avec leurs propres filtres (nom, équipe, date, statut).",
   },
   {
     id: "g-admin-equipes",
