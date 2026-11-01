@@ -13,8 +13,8 @@ import { Tableau } from "@/components/hp/demandes-ui";
 import { Encadre, Picto } from "@/components/hp/encadre";
 import { HpPage, useOwnProfile } from "@/components/hp/page";
 import { BandeauFiltre, RecapTuiles, buildTuiles } from "@/components/hp/recap";
-import { NewsImage } from "@/components/news-media";
-import { NewsReader } from "@/components/news-reader";
+import { Couverture, estEntreprise, imagesDe, signature } from "@/components/hp/news-shared";
+import { TabButton, TabList } from "@/components/hp/tabs";
 import {
   deleteDraftNews, deltaText, exportMyRecentSubmissions, fetchBlockers, fetchMetrics, fetchNews, formatMetricValue,
   publishDraftNews, requestNewsAuthorization, authorizeNews, refuseNews, timeAgo, updateBlockerStatus, TREND_LABELS, type News,
@@ -43,7 +43,7 @@ const date = (iso: string) =>
 function Accueil() {
   const qc = useQueryClient();
   const { role, email } = Route.useRouteContext();
-  const { firstName, fullName } = useOwnProfile();
+  const { firstName, fullName, team } = useOwnProfile();
   const myEmail = (email ?? "").toLowerCase();
   const peutRediger = role !== "collaborateur";
   const roleLabel = role === "admin" ? "ADMIN" : role === "manager" ? "MANAGER" : "COLLABORATEUR";
@@ -71,7 +71,6 @@ function Accueil() {
     onError,
   });
 
-  const [lecture, setLecture] = useState<News | null>(null);
   const [archive, setArchive] = useState(false);
   const setBlocker = useMutation({
     mutationFn: updateBlockerStatus,
@@ -148,7 +147,7 @@ function Accueil() {
         </section>
 
         <div className="grid items-stretch gap-6 lg:grid-cols-3">
-          <Carrousel className="lg:col-span-2" news={publiees} loading={news.isLoading} error={news.isError} onLire={setLecture} />
+          <Carrousel className="lg:col-span-2" news={publiees} loading={news.isLoading} error={news.isError} equipe={team} />
           <Indicateurs metrics={metrics.data} error={metrics.isError} />
         </div>
 
@@ -307,7 +306,6 @@ function Accueil() {
         </div>
       </Encadre>
       <BlockerArchive open={archive} onClose={() => setArchive(false)} />
-      <NewsReader news={lecture} onClose={() => setLecture(null)} />
     </HpPage>
   );
 }
@@ -321,50 +319,72 @@ function VoirTout({ n }: { n: number }) {
   );
 }
 
-// Actualités : carrousel (6 s, pause, mouvement réduit respecté)
-function Carrousel({ news, loading, error, onLire, className }: { news: News[]; loading: boolean; error: boolean; onLire: (n: News) => void; className?: string }) {
+// Actualités : carrousel (6 s, pause, mouvement réduit respecté), onglets Entreprise / Mon équipe comme au prototype
+function Carrousel({ news, loading, error, equipe, className }: { news: News[]; loading: boolean; error: boolean; equipe: string | null; className?: string }) {
+  const [onglet, setOnglet] = useState<"entreprise" | "equipe">("entreprise");
   const [i, setI] = useState(0);
   const [pause, setPause] = useState(false);
-  const slide = news[i] ?? news[0];
-  const aller = (pas: number) => setI((x) => (x + pas + news.length) % news.length);
+  const parOnglet = { entreprise: news.filter(estEntreprise), equipe: news.filter((n) => !estEntreprise(n)) };
+  const slides = parOnglet[onglet];
+  const slide = slides[i] ?? slides[0];
+  const aller = (pas: number) => setI((x) => (x + pas + slides.length) % slides.length);
   useEffect(() => {
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) setPause(true);
   }, []);
   useEffect(() => {
-    if (pause || news.length < 2) return;
+    if (pause || slides.length < 2) return;
     const t = setTimeout(() => aller(1), DELAI);
     return () => clearTimeout(t);
-  }, [pause, i, news.length]);
+  }, [pause, i, onglet, slides.length]);
+  const changer = (o: "entreprise" | "equipe") => { setOnglet(o); setI(0); };
+  const images = slide ? imagesDe(slide) : [];
 
   return (
-    <Encadre id="actualites" icon={Newspaper} title="Actualités" subtitle="Communication interne Bigger Boat" compteur={`${news.length} publiée${news.length > 1 ? "s" : ""}`} className={className}>
+    <Encadre
+      id="actualites"
+      icon={Newspaper}
+      title="Actualités"
+      className={className}
+      filtre={
+        <TabList label="Actualités">
+          <TabButton grand controle="carrousel-actus" active={onglet === "entreprise"} onClick={() => changer("entreprise")}>{`ENTREPRISE (${parOnglet.entreprise.length})`}</TabButton>
+          <TabButton grand controle="carrousel-actus" active={onglet === "equipe"} onClick={() => changer("equipe")}>{`MON ÉQUIPE${equipe ? ` · ${equipe.toUpperCase()}` : ""} (${parOnglet.equipe.length})`}</TabButton>
+        </TabList>
+      }
+    >
       {error ? (
         <p role="alert" className="px-6 py-6">Les actualités sont indisponibles.</p>
       ) : loading ? (
         <p className="px-6 py-6 text-ink-2">Chargement…</p>
-      ) : !slide ? (
-        <p className="px-6 py-6 text-[14px] leading-5 text-ink-2">Aucune actualité publiée.</p>
       ) : (
-        <div className="flex flex-1 flex-col" aria-roledescription="carrousel">
-          {slide.image_path ? (
-            <NewsImage path={slide.image_path} alt="" className="h-60 max-h-60 border-0" />
+        <div id="carrousel-actus" role="tabpanel" className="flex flex-1 flex-col" aria-roledescription="carrousel">
+          {images.length > 0 ? (
+            <div className="grid h-60 gap-px bg-line" style={{ gridTemplateColumns: `repeat(${images.length}, minmax(0, 1fr))` }}>
+              {images.map((p) => <Couverture key={p} path={p} className="h-60" />)}
+            </div>
           ) : (
             <div className="flex h-60 items-center justify-center bg-neutral-1" aria-hidden><ImageIcon size={40} className="text-ink-2" /></div>
           )}
-          <div className="flex flex-1 items-end justify-between gap-6 px-6 py-5" aria-roledescription="diapositive" aria-label={`${i + 1} sur ${news.length}`} aria-live={pause ? "polite" : "off"}>
-            <div className="flex flex-col gap-2">
-              <h3 className="text-[24px] leading-8">{slide.title}</h3>
-              <p className="text-[12px] leading-4 text-ink-2">Publié le {date(slide.created_at)} · Par {slide.author}</p>
+          {slide ? (
+            <div className="flex flex-1 items-end justify-between gap-6 px-6 py-5" aria-roledescription="diapositive" aria-label={`${i + 1} sur ${slides.length}`} aria-live={pause ? "polite" : "off"}>
+              <div className="flex flex-col gap-2">
+                {slide.category && <span className="label text-ink-2">{slide.category}</span>}
+                <h3 className="text-[24px] leading-8">{slide.title}</h3>
+                <p className="text-[12px] leading-4 text-ink-2">{signature(slide)}</p>
+              </div>
+              <Link to="/actualites/$id" params={{ id: slide.id }} className="inline-flex h-11 shrink-0 items-center gap-2 px-1 text-[14px] leading-5 font-semibold text-anthracite underline underline-offset-4 hover:text-ink">
+                <BookOpen size={16} aria-hidden /> Lire l'article
+              </Link>
             </div>
-            <button type="button" onClick={() => onLire(slide)} className="inline-flex h-11 shrink-0 items-center gap-2 px-1 text-[14px] leading-5 font-semibold text-anthracite underline underline-offset-4 hover:text-ink">
-              <BookOpen size={16} aria-hidden /> Lire l'article
-            </button>
-          </div>
-          <div className="flex flex-wrap items-center justify-between gap-4 border-t border-line px-6 py-3">
-            <HpButton role="consulte" icon={pause ? Play : Pause} onClick={() => setPause((p) => !p)}>{pause ? "REPRENDRE" : "METTRE EN PAUSE (6S)"}</HpButton>
+          ) : (
+            <p className="flex-1 px-6 py-5 text-[14px] leading-5 text-ink-2">Aucune actualité publiée dans cet onglet.</p>
+          )}
+          <div className="flex items-center justify-between gap-4 border-t border-line px-6 py-3">
+            <HpButton role="consulte" icon={pause ? Play : Pause} onClick={() => setPause((p) => !p)} className="w-[230px]">{pause ? "REPRENDRE" : "METTRE EN PAUSE (6S)"}</HpButton>
+            <span className="text-[12px] leading-4 text-ink-2">Communication interne Bigger Boat</span>
             <div className="flex items-center gap-1">
-              {news.map((s, k) => (
-                <button key={s.id} type="button" aria-label={`Diapositive ${k + 1} sur ${news.length}`} aria-current={k === i} onClick={() => setI(k)} className="group flex size-11 cursor-pointer items-center justify-center">
+              {slides.map((s, k) => (
+                <button key={s.id} type="button" aria-label={`Diapositive ${k + 1} sur ${slides.length}`} aria-current={k === i} onClick={() => setI(k)} className="group flex size-11 cursor-pointer items-center justify-center">
                   <span className={cn("size-3 border group-hover:border-anthracite", k === i ? "border-anthracite bg-anthracite" : "border-ink-2 bg-white")} />
                 </button>
               ))}
