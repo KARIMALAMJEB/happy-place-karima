@@ -5,7 +5,8 @@ import { TabButton, TabList } from "@/components/hp/tabs";
 import { BandeauFiltre, type Tuile } from "@/components/hp/recap";
 import { cn } from "@/lib/utils";
 import { Tableau, type Perspective } from "@/components/hp/demandes-ui";
-import { stateOf, STATE_LABEL, type RequestRow, type RequestState } from "@/lib/requests";
+import { BarreFiltres, correspond, dansPeriode, equipesDe, type Periode } from "@/components/hp/filtres-liste";
+import { refOf, stateOf, STATE_LABEL, type RequestRow, type RequestState } from "@/lib/requests";
 
 // Blocs de demandes communs à l'accueil et à la page Demandes (même rendu que le prototype)
 type Statut = "tous" | RequestState;
@@ -33,7 +34,23 @@ export function BlocStatuts({ id, titre, sousTitre, liste, perspective, vide, tu
   tuile: Tuile | null; onRetirer: () => void;
 }) {
   const [statut, setStatut] = useState<Statut>("tous");
-  const base = tuile ? liste.filter(tuile.garde) : liste;
+  const [q, setQ] = useState("");
+  const [equipe, setEquipe] = useState("");
+  const [periode, setPeriode] = useState<Periode>("");
+  const [nature, setNature] = useState("");
+  // Filtres pour la personne qui décide (l'admin gère beaucoup de monde) : nom, titre, équipe, date, nature
+  const filtrable = perspective === "valideur";
+  const actifs = !!(q || equipe || periode || nature);
+  const apres = !filtrable
+    ? liste
+    : liste.filter(
+        (r) =>
+          correspond(q, r.title, r.content.slice(0, 200), r.author_name, refOf(r)) &&
+          (!equipe || r.team === equipe) &&
+          dansPeriode(r.created_at, periode) &&
+          (!nature || (nature === "bloquante") === !!r.blocking),
+      );
+  const base = tuile ? apres.filter(tuile.garde) : apres;
   const lignes = statut === "tous" ? base : base.filter((r) => stateOf(r) === statut);
   return (
     <Encadre id={id} icon={ClipboardList} title={titre} subtitle={sousTitre} compteur={`${base.length} demande${base.length > 1 ? "s" : ""}`}>
@@ -42,8 +59,30 @@ export function BlocStatuts({ id, titre, sousTitre, liste, perspective, vide, tu
           <BandeauFiltre label={tuile.label} n={base.length} onRetirer={onRetirer} />
         </div>
       )}
+      {filtrable && liste.length > 0 && (
+        <div className="border-b border-line px-6 py-3">
+          <BarreFiltres
+            recherche={q}
+            onRecherche={setQ}
+            placeholder="Rechercher un nom, un titre, une référence"
+            equipe={equipe}
+            onEquipe={setEquipe}
+            equipes={equipesDe(liste.map((r) => r.team))}
+            periode={periode}
+            onPeriode={setPeriode}
+            actifs={actifs}
+            onReinitialiser={() => { setQ(""); setEquipe(""); setPeriode(""); setNature(""); }}
+          >
+            <select aria-label="Filtrer par nature" value={nature} onChange={(e) => setNature(e.target.value)} className="min-h-11 border border-field bg-white px-3 text-[14px] leading-5 text-ink">
+              <option value="">Toutes natures</option>
+              <option value="bloquante">Bloquante</option>
+              <option value="non-bloquante">Non bloquante</option>
+            </select>
+          </BarreFiltres>
+        </div>
+      )}
       <BarreStatuts liste={base} statut={statut} onChoisir={setStatut} />
-      <Tableau lignes={lignes} perspective={perspective} vide={vide} />
+      <Tableau lignes={lignes} perspective={perspective} vide={actifs ? "Aucune demande ne correspond à ces filtres." : vide} />
     </Encadre>
   );
 }
@@ -82,8 +121,17 @@ export function BlocLecture({ id, titre, sousTitre, liste, equipes, etats, persp
   const [nature, setNature] = useState("");
   const [etat, setEtat] = useState("");
   const [page, setPage] = useState(0);
+  const [q, setQ] = useState("");
+  const [periode, setPeriode] = useState<Periode>("");
+  // Un auteur à identité confidentielle n'est jamais retrouvé par son nom par un lecteur
+  const nomVisible = (r: RequestRow) => (perspective === "lecteur" && r.confidential_identity ? "" : r.author_name);
   const filtrees = liste.filter(
-    (r) => (!equipe || r.team === equipe) && (!nature || (nature === "bloquante") === !!r.blocking) && (!etat || stateOf(r) === etat),
+    (r) =>
+      (!equipe || r.team === equipe) &&
+      (!nature || (nature === "bloquante") === !!r.blocking) &&
+      (!etat || stateOf(r) === etat) &&
+      correspond(q, r.title, r.content.slice(0, 200), nomVisible(r), refOf(r)) &&
+      dansPeriode(r.created_at, periode),
   );
   const pages = Math.max(1, Math.ceil(filtrees.length / PAR_PAGE));
   const p = Math.min(page, pages - 1);
@@ -98,6 +146,20 @@ export function BlocLecture({ id, titre, sousTitre, liste, equipes, etats, persp
       compteur={`${filtrees.length} sur ${liste.length}`}
       filtre={
         <>
+          <input
+            type="search"
+            aria-label="Rechercher une demande ou un auteur"
+            placeholder="Rechercher un nom, un titre"
+            value={q}
+            onChange={(e) => { setQ(e.target.value); setPage(0); }}
+            className={select}
+          />
+          <select aria-label="Filtrer par date" value={periode} onChange={(e) => { setPeriode(e.target.value as Periode); setPage(0); }} className={select}>
+            <option value="">Toutes les dates</option>
+            <option value="7">7 derniers jours</option>
+            <option value="30">30 derniers jours</option>
+            <option value="90">90 derniers jours</option>
+          </select>
           <select aria-label="Filtrer par équipe" value={equipe} onChange={change(setEquipe)} className={select}>
             <option value="">Toutes les équipes</option>
             {equipes.map((t) => <option key={t} value={t}>{t}</option>)}

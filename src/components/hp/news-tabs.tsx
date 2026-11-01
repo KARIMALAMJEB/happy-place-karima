@@ -5,6 +5,7 @@ import { Fragment, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { HpButton, HpIconButton } from "@/components/hp/button";
 import { Encadre } from "@/components/hp/encadre";
+import { BarreFiltres, correspond, dansPeriode, equipesDe, type Periode } from "@/components/hp/filtres-liste";
 import { StatutPublication, dateCourte, fichiersDe, joursDepuis, libellePerimetre, tonNews } from "@/components/hp/news-shared";
 import { texteBrut } from "@/components/hp/rich-text";
 import { POINTS, TraitStatut } from "@/components/hp/statut";
@@ -102,17 +103,41 @@ function RefusAnnonce({ a, onFermer, onConfirmer, envoi }: { a?: News; onFermer:
 // ---------- Onglet « À autoriser » (admin) ----------
 export function AutoriserTab({ liste, actions }: { liste: News[]; actions: ReturnType<typeof useActionsActus> }) {
   const [refus, setRefus] = useState<News>();
+  const [q, setQ] = useState("");
+  const [equipe, setEquipe] = useState("");
+  const [periode, setPeriode] = useState<Periode>("");
+  const actifs = !!(q || equipe || periode);
+  const filtrees = liste.filter(
+    (a) => correspond(q, a.title, a.author, a.author_team, a.category, texteBrut(a.body ?? "").slice(0, 200)) && (!equipe || a.author_team === equipe) && dansPeriode(a.requested_at ?? a.created_at, periode),
+  );
   return (
     <div className="flex flex-col gap-4">
-      {liste.length === 0 ? (
-        <p className="border border-line bg-white px-6 py-8 text-center text-[16px] leading-6">Rien à autoriser pour le moment.</p>
+      {liste.length > 0 && (
+        <div className="border border-line bg-white px-6 py-4">
+          <BarreFiltres
+            recherche={q}
+            onRecherche={setQ}
+            placeholder="Rechercher un auteur, un titre, une catégorie"
+            equipe={equipe}
+            onEquipe={setEquipe}
+            equipes={equipesDe(liste.map((a) => a.author_team))}
+            periode={periode}
+            onPeriode={setPeriode}
+            actifs={actifs}
+            onReinitialiser={() => { setQ(""); setEquipe(""); setPeriode(""); }}
+          />
+          <p role="status" className="pt-2 text-[12px] leading-4 text-ink-2">{filtrees.length} sur {liste.length} annonce{liste.length > 1 ? "s" : ""} à autoriser</p>
+        </div>
+      )}
+      {filtrees.length === 0 ? (
+        <p className="border border-line bg-white px-6 py-8 text-center text-[16px] leading-6">{liste.length === 0 ? "Rien à autoriser pour le moment." : "Aucune annonce ne correspond à ces filtres."}</p>
       ) : (
-        liste.map((a) => (
+        filtrees.map((a) => (
           <article key={a.id} className="relative flex flex-col gap-3 border border-line bg-white py-5 pr-6 pl-7">
             <TraitStatut ton={tonNews(a.status)} />
             <h3 className="text-[22px] leading-7">{a.title}</h3>
             <p className="text-[12px] leading-4 text-ink-2">
-              {[a.author, `Demandée le ${dateCourte(a.requested_at ?? a.created_at)}`, "Toute l'entreprise"].join(" · ")}
+              {[a.author, a.author_team, `Demandée le ${dateCourte(a.requested_at ?? a.created_at)}`, "Toute l'entreprise"].filter(Boolean).join(" · ")}
             </p>
             {a.body && <p className="line-clamp-2 max-w-[80ch] text-[14px] leading-5">{texteBrut(a.body)}</p>}
             {fichiersDe(a).length > 0 && (
@@ -166,12 +191,17 @@ function derniereAction(a: News) {
 export function SuiviTab({ toutes, miennes, initial, statutInitial }: { toutes: News[]; miennes: News[]; initial?: "mes"; statutInitial?: string }) {
   const [filtre, setFiltre] = useState<FiltreSuivi>(initial ?? "toutes");
   const [motifOuvert, setMotifOuvert] = useState<string>();
+  const [q, setQ] = useState("");
+  const [equipe, setEquipe] = useState("");
+  const [periode, setPeriode] = useState<Periode>("");
   const entreprise = toutes.filter((a) => (a.scope ?? "entreprise") === "entreprise" && a.status !== "brouillon");
   const mes = statutInitial ? miennes.filter((a) => a.status === statutInitial) : miennes;
   const n = (f: FiltreSuivi) => (f === "mes" ? mes.length : f === "toutes" ? entreprise.length : entreprise.filter((a) => a.status === f).length);
-  const liste = (filtre === "mes" ? mes : filtre === "toutes" ? entreprise : entreprise.filter((a) => a.status === filtre)).sort((x, y) =>
-    (y.requested_at ?? y.created_at).localeCompare(x.requested_at ?? x.created_at),
-  );
+  const source = filtre === "mes" ? mes : filtre === "toutes" ? entreprise : entreprise.filter((a) => a.status === filtre);
+  const actifs = !!(q || equipe || periode);
+  const liste = source
+    .filter((a) => correspond(q, a.title, a.author, a.author_team, a.category) && (!equipe || a.author_team === equipe) && dansPeriode(a.requested_at ?? a.created_at, periode))
+    .sort((x, y) => (y.requested_at ?? y.created_at).localeCompare(x.requested_at ?? x.created_at));
   const action = (a: News) => {
     if (a.status === "en attente") return <Link to="/actualites" search={{ onglet: "autoriser" }} className={TEXT_LINK}>Examiner</Link>;
     if (a.status === "refusée")
@@ -217,6 +247,22 @@ export function SuiviTab({ toutes, miennes, initial, statutInitial }: { toutes: 
             <TabButton active={filtre === "mes"} onClick={() => setFiltre("mes")}>{`MES PUBLICATIONS (${n("mes")})`}</TabButton>
           </TabList>
         </div>
+        {source.length > 0 && (
+          <div className="border-t border-line px-6 py-3">
+            <BarreFiltres
+              recherche={q}
+              onRecherche={setQ}
+              placeholder="Rechercher un auteur, un titre, une catégorie"
+              equipe={equipe}
+              onEquipe={setEquipe}
+              equipes={equipesDe(source.map((a) => a.author_team))}
+              periode={periode}
+              onPeriode={setPeriode}
+              actifs={actifs}
+              onReinitialiser={() => { setQ(""); setEquipe(""); setPeriode(""); }}
+            />
+          </div>
+        )}
         {liste.length === 0 ? (
           <p className="border-t border-line px-6 py-5 text-[14px] text-ink-2">Aucune annonce avec ce filtre.</p>
         ) : (
@@ -237,7 +283,7 @@ export function SuiviTab({ toutes, miennes, initial, statutInitial }: { toutes: 
                       <span className="block text-[14px] leading-5 font-semibold">{a.title}</span>
                       {filtre === "mes" && <span className="text-[12px] leading-4 text-ink-2">{libellePerimetre(a)}</span>}
                     </td>
-                    <td className="px-3 text-[14px] leading-5">{a.author}</td>
+                    <td className="px-3 text-[14px] leading-5">{a.author}{a.author_team && <span className="block text-[12px] leading-4 text-ink-2">{a.author_team}</span>}</td>
                     <td className="px-3"><StatutPublication statut={a.status} /></td>
                     <td className="px-3 text-[12px] leading-4 text-ink-2">{derniereAction(a)}</td>
                     <td className="pr-6 text-right">{action(a)}</td>
