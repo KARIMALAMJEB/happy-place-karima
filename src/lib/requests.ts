@@ -171,13 +171,27 @@ export async function updateFollowUp(
   if (error) throw error;
 }
 
-// L'auteur répond après une demande de précisions : RPC contrôlée côté base
-export async function completeRequest(id: string, answer: string) {
-  const { error } = await sb.rpc("complete_submission", {
-    _id: id,
-    _answers: [],
-    _infos: answer.trim(),
-  });
+export const MAX_JUSTIFICATIFS = 4;
+export type Justificatif = { path: string; name: string };
+export type Complement = { reponses?: Justificatif[]; infos?: string | null; date?: string };
+
+// L'auteur répond après une demande de précisions : PDF déposés dans son dossier, puis RPC contrôlée côté base
+export async function completeRequest(id: string, answer: string, files: File[] = []) {
+  if (files.length > MAX_JUSTIFICATIFS) throw new Error(`${MAX_JUSTIFICATIFS} documents au maximum.`);
+  const pieces: Justificatif[] = [];
+  if (files.length) {
+    const { data: u } = await sb.auth.getUser();
+    if (!u.user) throw new Error("Session expirée : reconnecte-toi.");
+    for (const f of files) {
+      if (f.type !== "application/pdf") throw new Error("Seuls les fichiers PDF sont acceptés.");
+      if (f.size > MAX_PDF_BYTES) throw new Error(`${f.name} dépasse 20 Mo.`);
+      const path = `${u.user.id}/${crypto.randomUUID()}.pdf`;
+      const { error: upErr } = await sb.storage.from(ATTACHMENT_BUCKET).upload(path, f, { contentType: "application/pdf" });
+      if (upErr) throw upErr;
+      pieces.push({ path, name: f.name.slice(0, 200) });
+    }
+  }
+  const { error } = await sb.rpc("complete_submission", { _id: id, _answers: pieces, _infos: answer.trim() });
   if (error) throw error;
 }
 

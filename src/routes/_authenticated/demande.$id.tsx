@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, FileText, MessageSquareMore, Send, X } from "lucide-react";
+import { Check, FileText, MessageSquareMore, Send, Upload, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { HpButton } from "@/components/hp/button";
@@ -11,7 +11,10 @@ import {
   REJECTION_CATEGORIES,
   VISIBILITY_LABEL,
   attachmentUrl,
+  MAX_JUSTIFICATIFS,
+  MAX_PDF_BYTES,
   completeRequest,
+  type Complement,
   decideRequest,
   fetchRequest,
   refOf,
@@ -55,6 +58,8 @@ function DemandeDetail() {
   const [mode, setMode] = useState<"refuser" | "preciser" | null>(null);
   const [erreur, setErreur] = useState("");
   const [reponse, setReponse] = useState("");
+  const [fichiers, setFichiers] = useState<File[]>([]);
+  const [erreurFichier, setErreurFichier] = useState("");
   const [suivi, setSuivi] = useState<FollowUp | "">("");
   const [resp, setResp] = useState("");
   const [cible, setCible] = useState("");
@@ -87,12 +92,12 @@ function DemandeDetail() {
     onError,
   });
   const completer = useMutation({
-    mutationFn: () => completeRequest(id, reponse),
-    onSuccess: () => { toast.success("Réponse envoyée"); setReponse(""); refresh(); },
+    mutationFn: () => completeRequest(id, reponse, fichiers),
+    onSuccess: () => { toast.success("Réponse envoyée"); setReponse(""); setFichiers([]); refresh(); },
     onError,
   });
   const pj = useMutation({
-    mutationFn: () => attachmentUrl(r!.attachment_path!),
+    mutationFn: (path: string) => attachmentUrl(path),
     onSuccess: (url) => window.open(url, "_blank", "noopener"),
     onError,
   });
@@ -107,6 +112,7 @@ function DemandeDetail() {
     );
 
   const etat = stateOf(r);
+  const complement = (r.complement ?? null) as Complement | null;
   const estAuteur = (r.submitted_by_email ?? "").toLowerCase() === email;
   // Démo : un même compte change de rôle, il peut donc décider sa propre demande. À réactiver avec la vraie connexion (lot sécurité).
   const peutDecider = role !== "collaborateur";
@@ -147,7 +153,7 @@ function DemandeDetail() {
           </dl>
           {r.attachment_path && (
             <div>
-              <HpButton type="button" role="consulte" icon={FileText} disabled={pj.isPending} onClick={() => pj.mutate()}>
+              <HpButton type="button" role="consulte" icon={FileText} disabled={pj.isPending} onClick={() => pj.mutate(r.attachment_path!)}>
                 {r.attachment_name ?? "OUVRIR LE PDF"}
               </HpButton>
             </div>
@@ -162,11 +168,55 @@ function DemandeDetail() {
         </div>
       </Encadre>
 
+      {complement && (complement.infos || complement.reponses?.length) && (
+        <Encadre title="Réponse de l'auteur">
+          <div className="flex flex-col gap-3 p-6">
+            {complement.date && <p className="text-[12px] leading-4 text-ink-2">Renvoyée le {fmt(complement.date)}</p>}
+            {complement.infos && <p className="text-[16px] leading-6 whitespace-pre-wrap text-ink">{complement.infos}</p>}
+            <div className="flex flex-wrap gap-3">
+              {(complement.reponses ?? []).map((j) => (
+                <HpButton key={j.path} type="button" role="consulte" icon={FileText} disabled={pj.isPending} onClick={() => pj.mutate(j.path)}>
+                  {j.name}
+                </HpButton>
+              ))}
+            </div>
+          </div>
+        </Encadre>
+      )}
+
       {etat === "a_completer" && estAuteur && (
         <Encadre title="Compléter ma demande">
           <div className="flex flex-col gap-3 p-6">
             <label htmlFor="reponse" className="label text-ink">Ta réponse</label>
             <textarea id="reponse" className={`${champ} min-h-32 py-2`} value={reponse} maxLength={1000} onChange={(e) => setReponse(e.target.value)} />
+            <span className="label text-ink">Documents justificatifs (facultatif)</span>
+            <label className="flex cursor-pointer flex-col items-center gap-2 border border-dashed border-field bg-neutral-1 px-6 py-6 text-center hover:bg-neutral-2">
+              <Upload size={20} aria-hidden />
+              <span className="text-[14px] leading-5"><span className="font-semibold underline underline-offset-4">Parcourir tes dossiers</span> pour joindre des PDF</span>
+              <span className="text-[12px] leading-4 text-ink-2">PDF uniquement · 20 Mo maximum par fichier · {MAX_JUSTIFICATIFS} fichiers maximum</span>
+              <input
+                type="file"
+                multiple
+                accept="application/pdf,.pdf"
+                className="sr-only"
+                onChange={(e) => {
+                  const choisis = Array.from(e.target.files ?? []);
+                  e.target.value = "";
+                  const valides = choisis.filter((f) => f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf"));
+                  if (valides.length < choisis.length) setErreurFichier("Seuls les fichiers PDF sont acceptés.");
+                  else if (valides.some((f) => f.size > MAX_PDF_BYTES)) setErreurFichier("Un fichier dépasse 20 Mo.");
+                  else if (fichiers.length + valides.length > MAX_JUSTIFICATIFS) setErreurFichier(`${MAX_JUSTIFICATIFS} documents au maximum.`);
+                  else { setErreurFichier(""); setFichiers([...fichiers, ...valides]); }
+                }}
+              />
+            </label>
+            {erreurFichier && <p role="alert" className="text-[12px] font-semibold text-[#8E1A1F]">{erreurFichier}</p>}
+            {fichiers.map((f, i) => (
+              <p key={`${f.name}-${i}`} className="flex items-center justify-between gap-3 border border-line px-4 py-2 text-[14px] leading-5">
+                <span className="truncate">{f.name}</span>
+                <button type="button" onClick={() => setFichiers(fichiers.filter((_, j) => j !== i))} className="underline underline-offset-4 hover:text-ink">Retirer</button>
+              </p>
+            ))}
             <div>
               <HpButton type="button" role="publie" icon={Send} disabled={completer.isPending || reponse.trim().length < 3} onClick={() => completer.mutate()}>
                 RENVOYER LA DEMANDE
