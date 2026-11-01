@@ -148,26 +148,23 @@ export async function fetchToReview(): Promise<RequestRow[]> {
 // Libellé affiché d'un motif (la base stocke « à clarifier », « doublon »…)
 export const motifLabel = (m: string | null | undefined) => (m ? m.charAt(0).toUpperCase() + m.slice(1) : "");
 
-export const REJECTION_CATEGORIES = ["en désaccord avec les process", "doublon", "autre"] as const;
+export type Motif = "à clarifier" | "en désaccord avec les process" | "doublon" | "autre";
 
 export type Decision =
   | { kind: "valider" }
-  | { kind: "refuser"; category: (typeof REJECTION_CATEGORIES)[number]; note: string }
-  | { kind: "preciser"; questions: string[] };
+  | { kind: "refuser"; motif: Motif; explication: string; precisions?: string[] };
 
 export async function decideRequest(id: string, d: Decision) {
   const patch =
     d.kind === "valider"
       ? { status: "validée", rejection_category: null, rejection_note: null }
-      : d.kind === "preciser"
-        ? {
-            status: "refusée",
-            rejection_category: "à clarifier",
-            // Le texte brut part dans l'e-mail ; la liste structurée sert à l'écran de réponse
-            rejection_note: d.questions.map((q, i) => `${i + 1}. ${q.trim()}`).join("\n").slice(0, 500),
-            clarifications: d.questions.map((q) => q.trim()),
-          }
-        : { status: "refusée", rejection_category: d.category, rejection_note: d.note.trim().slice(0, 500) };
+      : {
+          status: "refusée",
+          rejection_category: d.motif,
+          // L'explication part dans l'e-mail ; les précisions (« À clarifier ») sont listées pour la réponse de l'auteur
+          rejection_note: d.explication.trim().slice(0, 500),
+          ...(d.motif === "à clarifier" ? { clarifications: (d.precisions ?? []).map((q) => q.trim()) } : {}),
+        };
   const { error } = await sb.from("submissions").update(patch).eq("id", id);
   if (error) throw error;
 }
@@ -185,6 +182,7 @@ export type Justificatif = { path: string; name: string };
 export type Reponse = { question: string; reponse: string };
 export type Complement = { reponses?: (Reponse & Partial<Justificatif>)[]; fichiers?: Justificatif[]; infos?: string | null; date?: string };
 
+// Précisions demandées ; pour une ancienne demande sans liste, le message du valideur sert de question unique
 export const questionsOf = (r: Pick<RequestRow, "clarifications" | "rejection_note">): string[] =>
   Array.isArray(r.clarifications) && r.clarifications.length
     ? (r.clarifications as string[])

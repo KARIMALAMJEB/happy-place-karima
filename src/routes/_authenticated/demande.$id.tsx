@@ -1,14 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, FileText, MessageSquareMore, Plus, Send, Upload, X } from "lucide-react";
+import { Check, FileText, Send, Upload, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { HpButton } from "@/components/hp/button";
 import { Encadre } from "@/components/hp/encadre";
 import { HpPage, useOwnProfile } from "@/components/hp/page";
+import { RefusDialog } from "@/components/hp/refus-dialog";
 import { BloquanteMot, StatutBadge } from "@/components/hp/statut";
 import {
-  REJECTION_CATEGORIES,
   VISIBILITY_LABEL,
   attachmentUrl,
   MAX_JUSTIFICATIFS,
@@ -57,11 +57,7 @@ function DemandeDetail() {
   const q = useQuery({ queryKey: ["requests", "one", id], queryFn: () => fetchRequest(id) });
   const r = q.data;
 
-  const [note, setNote] = useState("");
-  const [categorie, setCategorie] = useState<(typeof REJECTION_CATEGORIES)[number]>("autre");
-  const [mode, setMode] = useState<"refuser" | "preciser" | null>(null);
-  const [erreur, setErreur] = useState("");
-  const [questions, setQuestions] = useState<string[]>([""]);
+  const [refusOuvert, setRefusOuvert] = useState(false);
   const [reponses, setReponses] = useState<string[]>([]);
   const [infos, setInfos] = useState("");
   const [fichiers, setFichiers] = useState<File[]>([]);
@@ -92,10 +88,8 @@ function DemandeDetail() {
   const decider = useMutation({
     mutationFn: (d: Decision) => decideRequest(id, d),
     onSuccess: (_v, d) => {
-      toast.success(d.kind === "valider" ? "Demande validée" : d.kind === "preciser" ? "Précisions demandées" : "Demande refusée");
-      setMode(null);
-      setNote("");
-      setQuestions([""]);
+      toast.success(d.kind === "valider" ? "Demande validée" : d.motif === "à clarifier" ? "Précisions demandées" : "Demande refusée");
+      setRefusOuvert(false);
       refresh();
     },
     onError,
@@ -133,21 +127,6 @@ function DemandeDetail() {
   const peutSuivre = role !== "collaborateur" && etat === "validee";
   const auteur = r.confidential_identity && !estAuteur && role === "collaborateur" ? "Auteur confidentiel" : r.author_name;
 
-  function envoyerDecision() {
-    if (!mode) return;
-    if (mode === "preciser") {
-      const qs = questions.map((q) => q.trim()).filter(Boolean);
-      if (!qs.length) return setErreur("Ajoute au moins une question.");
-      if (qs.some((q) => q.length < 3)) return setErreur("Chaque question fait au moins 3 caractères.");
-      if (qs.map((q, i) => `${i + 1}. ${q}`).join("\n").length > 500) return setErreur("Les questions dépassent 500 caractères au total.");
-      setErreur("");
-      return decider.mutate({ kind: "preciser", questions: qs });
-    }
-    if (note.trim().length < 5) return setErreur("Écris un message d'au moins 5 caractères.");
-    setErreur("");
-    decider.mutate({ kind: "refuser", category: categorie, note });
-  }
-
   return (
     <HpPage>
       <section className="flex flex-col gap-3 border border-line bg-white px-6 py-6 lg:px-8">
@@ -180,9 +159,11 @@ function DemandeDetail() {
               </HpButton>
             </div>
           )}
-          {etat === "a_completer" && questionsOf(r).length > 0 && (
+          {etat === "a_completer" && (
             <div className="border-l-4 border-line bg-neutral-1 px-4 py-3 text-[14px] leading-5">
-              <p className="font-semibold">Précisions demandées</p>
+              <p className="font-semibold">Motif : À clarifier</p>
+              {r.rejection_note && Array.isArray(r.clarifications) && r.clarifications.length > 0 && <p className="mt-1 whitespace-pre-wrap">{r.rejection_note}</p>}
+              <p className="mt-2 font-semibold">Précisions demandées</p>
               <ol className="mt-1 list-decimal pl-5">
                 {questionsOf(r).map((q, i) => <li key={i} className="whitespace-pre-wrap">{q.replace(/^\d+\.\s/, "")}</li>)}
               </ol>
@@ -283,64 +264,17 @@ function DemandeDetail() {
 
       {peutDecider && etat === "en_attente" && (
         <Encadre title="Décision">
-          <div className="flex flex-col gap-4 p-6">
-            <div className="flex flex-wrap gap-3">
-              <HpButton type="button" role="valide" icon={Check} disabled={decider.isPending} onClick={() => decider.mutate({ kind: "valider" })}>VALIDER</HpButton>
-              <HpButton type="button" role="modifie" icon={MessageSquareMore} onClick={() => { setMode("preciser"); setErreur(""); }}>DEMANDER DES PRÉCISIONS</HpButton>
-              <HpButton type="button" role="refuse" icon={X} onClick={() => { setMode("refuser"); setErreur(""); }}>REFUSER</HpButton>
-            </div>
-            {mode && (
-              <div className="flex flex-col gap-3 border border-line p-4">
-                {mode === "refuser" && (
-                  <>
-                    <label htmlFor="cat" className="label text-ink">Motif du refus (définitif)</label>
-                    <select id="cat" className={champ} value={categorie} onChange={(e) => setCategorie(e.target.value as typeof categorie)}>
-                      {REJECTION_CATEGORIES.map((c) => <option key={c} value={c}>{motifLabel(c)}</option>)}
-                    </select>
-                  </>
-                )}
-                {mode === "preciser" ? (
-                  <>
-                    <span className="label text-ink">Tes questions à l'auteur</span>
-                    {questions.map((q, i) => (
-                      <div key={i} className="flex items-center gap-2">
-                        <span className="w-6 text-[14px] leading-5 text-ink-2">{i + 1}.</span>
-                        <input
-                          aria-label={`Question ${i + 1}`}
-                          className={champ}
-                          value={q}
-                          maxLength={200}
-                          onChange={(e) => setQuestions(questions.map((x, j) => (j === i ? e.target.value : x)))}
-                        />
-                        {questions.length > 1 && (
-                          <button type="button" aria-label={`Retirer la question ${i + 1}`} onClick={() => setQuestions(questions.filter((_, j) => j !== i))} className="flex size-11 shrink-0 items-center justify-center border border-line hover:bg-neutral-1">
-                            <X size={16} aria-hidden />
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                    {questions.length < 5 && (
-                      <div>
-                        <HpButton type="button" role="consulte" icon={Plus} onClick={() => setQuestions([...questions, ""])}>AJOUTER UNE QUESTION</HpButton>
-                      </div>
-                    )}
-                    <span className="text-[12px] leading-4 text-ink-2">5 questions au maximum. L'auteur est prévenu par e-mail.</span>
-                  </>
-                ) : (
-                  <>
-                    <label htmlFor="note" className="label text-ink">Explication pour l'auteur</label>
-                    <textarea id="note" className={`${champ} min-h-28 py-2`} value={note} maxLength={500} onChange={(e) => setNote(e.target.value)} />
-                    <span className="text-[12px] leading-4 text-ink-2">{note.length} / 500 caractères. L'auteur est prévenu par e-mail.</span>
-                  </>
-                )}
-                {erreur && <p role="alert" className="text-[12px] font-semibold text-[#8E1A1F]">{erreur}</p>}
-                <div className="flex gap-3">
-                  <HpButton type="button" role="principal" icon={Send} disabled={decider.isPending} onClick={envoyerDecision}>ENVOYER</HpButton>
-                  <HpButton type="button" role="consulte" onClick={() => setMode(null)}>ANNULER</HpButton>
-                </div>
-              </div>
-            )}
+          <div className="flex flex-wrap gap-3 p-6">
+            <HpButton type="button" role="valide" icon={Check} disabled={decider.isPending} onClick={() => decider.mutate({ kind: "valider" })}>VALIDER</HpButton>
+            <HpButton type="button" role="refuse" icon={X} onClick={() => setRefusOuvert(true)}>REFUSER</HpButton>
           </div>
+          <RefusDialog
+            demande={r}
+            ouvert={refusOuvert}
+            envoi={decider.isPending}
+            onFermer={() => setRefusOuvert(false)}
+            onConfirmer={(x) => decider.mutate({ kind: "refuser", motif: x.motif, explication: x.explication, precisions: x.precisions })}
+          />
         </Encadre>
       )}
 
