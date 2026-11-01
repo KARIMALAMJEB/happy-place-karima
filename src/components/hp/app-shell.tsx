@@ -1,6 +1,6 @@
 import { Link, useRouteContext, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ClipboardList, Database, LayoutDashboard, LogOut, Menu, Repeat, Search, X } from "lucide-react";
+import { ClipboardList, Contact, Database, LayoutDashboard, LogOut, Menu, Repeat, Search, Wrench, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { HpButton, HpIconButton } from "@/components/hp/button";
 import { signOut, type AppRole } from "@/lib/auth";
@@ -58,6 +58,8 @@ function Sidebar({ role, ouvert, onFermer }: { role: AppRole; ouvert: boolean; o
   const actifTableau = pathname === "/";
   const compteur = useCompteurDemandes(role);
   const actifGestion = pathname.startsWith("/manage");
+  const actifOutils = pathname.startsWith("/boite-a-outils");
+  const actifAnnuaire = pathname.startsWith("/annuaire");
   const actifDemandes = pathname.startsWith("/demande") || pathname.startsWith("/deposer");
   const lien = (actif: boolean) =>
     cn(
@@ -89,6 +91,14 @@ function Sidebar({ role, ouvert, onFermer }: { role: AppRole; ouvert: boolean; o
           <ClipboardList size={18} aria-hidden />
           <span className="flex-1">Demandes</span>
           {compteur.n > 0 && <Count label={compteur.label}>{compteur.n}</Count>}
+        </Link>
+        <Link to="/boite-a-outils" aria-current={actifOutils ? "page" : undefined} className={lien(actifOutils)}>
+          <Wrench size={18} aria-hidden />
+          <span className="flex-1">Boîte à outils</span>
+        </Link>
+        <Link to="/annuaire" aria-current={actifAnnuaire ? "page" : undefined} className={lien(actifAnnuaire)}>
+          <Contact size={18} aria-hidden />
+          <span className="flex-1">Annuaire</span>
         </Link>
         {role === "admin" && (
           <Link to="/manage/news" aria-current={actifGestion ? "page" : undefined} className={lien(actifGestion)}>
