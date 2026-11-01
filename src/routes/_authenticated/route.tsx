@@ -2,8 +2,9 @@ import { createFileRoute, isRedirect, Outlet, redirect } from "@tanstack/react-r
 import { supabase } from "@/integrations/supabase/client";
 import { fetchOwnRole } from "@/lib/auth";
 
-// Version élèves : un compte connecté sans rôle est envoyé vers /choisir-role
-// (au lieu d'être déconnecté comme dans l'app d'origine, réservée à une liste blanche).
+// Liste blanche (kick-off) : un compte connecté qui n'est pas autorisé est déconnecté tout de suite,
+// avec un message explicite sur /auth. Seule exception transitoire : une session anonyme de démonstration
+// (adresse interne @happyplace.test) reste envoyée vers /choisir-role, jusqu'au retrait de ce mode.
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async () => {
@@ -12,7 +13,11 @@ export const Route = createFileRoute("/_authenticated")({
       if (error || !data.user) throw redirect({ to: "/auth" });
       const email = data.user.email ?? "";
       const role = email ? await fetchOwnRole(email) : null;
-      if (!role) throw redirect({ to: "/choisir-role" });
+      if (!role) {
+        if (data.user.is_anonymous) throw redirect({ to: "/choisir-role" });
+        await supabase.auth.signOut();
+        throw redirect({ to: "/auth", search: { refus: true } });
+      }
       return { user: data.user, email, role };
     } catch (e) {
       if (isRedirect(e)) throw e;
