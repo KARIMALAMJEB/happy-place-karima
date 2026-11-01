@@ -190,7 +190,7 @@ export async function updateFollowUp(
   if (error) throw error;
 }
 
-export const MAX_JUSTIFICATIFS = 4;
+export const MAX_JUSTIFICATIFS = 3;
 export type Justificatif = { path: string; name: string };
 export type Reponse = { question: string; reponse: string };
 export type Complement = { reponses?: (Reponse & Partial<Justificatif>)[]; fichiers?: Justificatif[]; infos?: string | null; date?: string };
