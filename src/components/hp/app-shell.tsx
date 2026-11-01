@@ -1,6 +1,6 @@
 import { Link, useRouteContext, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ClipboardList, Database, LayoutDashboard, LogOut, Menu, Repeat, X } from "lucide-react";
+import { ClipboardList, Database, LayoutDashboard, LogOut, Menu, Repeat, Search, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { HpButton, HpIconButton } from "@/components/hp/button";
 import { signOut, type AppRole } from "@/lib/auth";
@@ -124,6 +124,15 @@ function Header({ name, role, sousTitre, menuOuvert, onMenu }: { name: string; r
           MENU
         </HpButton>
         <span className="label-13 text-ink">HAPPY PLACE V2</span>
+        <label className="relative hidden items-center lg:flex">
+          <span className="sr-only">Rechercher</span>
+          <Search size={16} aria-hidden className="pointer-events-none absolute left-3 text-ink-2" />
+          <input
+            type="search"
+            placeholder="Rechercher une demande, un document, une personne"
+            className="h-11 w-96 border border-field bg-white pr-3 pl-9 text-[14px] text-ink placeholder:text-ink-2"
+          />
+        </label>
       </div>
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-3">
@@ -147,6 +156,14 @@ function Header({ name, role, sousTitre, menuOuvert, onMenu }: { name: string; r
 function Footer() {
   return (
     <footer className="flex items-center gap-2 border-t border-line px-8 py-4 text-[12px] leading-4 text-ink-2">
+      <Link to="/confidentialite" className="inline-flex min-h-6 items-center underline underline-offset-2 hover:text-ink">
+        Confidentialité
+      </Link>
+      <span aria-hidden>·</span>
+      <Link to="/confidentialite" hash="mentions-legales" className="inline-flex min-h-6 items-center underline underline-offset-2 hover:text-ink">
+        Mentions légales
+      </Link>
+      <span aria-hidden>·</span>
       <span>Happy Place V2 (démo)</span>
     </footer>
   );
