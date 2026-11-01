@@ -14,6 +14,7 @@ import {
   TextInput,
 } from "@/components/manage/crud-ui";
 import { Encadre } from "@/components/hp/encadre";
+import { RegleEditeur } from "@/components/hp/regle-editeur";
 import { HpButton } from "@/components/hp/button";
 import { POINTS, TraitStatut, type Ton } from "@/components/hp/statut";
 import { BarreFiltres, correspond, dansPeriode, equipesDe, type Periode } from "@/components/hp/filtres-liste";
@@ -123,6 +124,7 @@ function ManageNews() {
 
   return (
     <section className="space-y-6">
+      <RegleEditeur />
       <Encadre
         icon={Newspaper}
         title="Actualités"

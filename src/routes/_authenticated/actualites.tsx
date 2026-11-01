@@ -11,6 +11,7 @@ import { texteBrut } from "@/components/hp/rich-text";
 import { TraitStatut, type Ton } from "@/components/hp/statut";
 import { fetchNews, type News } from "@/lib/dashboard";
 import { cn } from "@/lib/utils";
+import { useRegle } from "@/lib/regle";
 
 type OngletActus = "fil" | "autoriser" | "suivi" | "mes";
 
@@ -22,7 +23,6 @@ export const Route = createFileRoute("/_authenticated/actualites")({
   component: Actualites,
 });
 
-const REGLE = "Les managers publient seuls pour leurs équipes. Pour toute l'entreprise, ils demandent l'autorisation d'un admin.";
 
 function Actualites() {
   return (
@@ -67,6 +67,7 @@ function Pipeline({ etapes, actif, onChoisir }: { etapes: Etape[]; actif?: strin
 function Page() {
   const { role, email } = useRouteContext({ from: "/_authenticated" });
   const { fullName } = useOwnProfile();
+  const regle = useRegle();
   const { onglet = "fil" } = Route.useSearch();
   const navigate = useNavigate({ from: "/actualites" });
   const news = useQuery({ queryKey: ["news"], queryFn: fetchNews, retry: false });
@@ -112,7 +113,7 @@ function Page() {
           <div className="flex flex-col gap-2">
             <h1 className="text-[36px] leading-[44px]">Actualités</h1>
             <p className="text-[16px] leading-6">Communication interne Bigger Boat</p>
-            {(admin || manager) && <p className="max-w-[80ch] text-[12px] leading-4 text-ink-2">Règle de publication : {REGLE}</p>}
+            {(admin || manager) && <p className="max-w-[80ch] text-[12px] leading-4 text-ink-2">Règle de publication : {regle}</p>}
           </div>
           {(admin || manager) && (
             <Link to="/rediger" className={hpButtonVariants({ role: "principal" })}>

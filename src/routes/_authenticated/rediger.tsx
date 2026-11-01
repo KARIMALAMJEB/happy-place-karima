@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { HpButton, HpIconButton, hpButtonVariants } from "@/components/hp/button";
 import { HpPage, useOwnProfile } from "@/components/hp/page";
+import { useRegle } from "@/lib/regle";
 import { RichText, RichTextEditor } from "@/components/hp/rich-text";
 import { supabase } from "@/integrations/supabase/client";
 import { PERSONNES } from "@/lib/annuaire";
@@ -308,10 +309,11 @@ function Rediger() {
     perimetre === "entreprise"
       ? "Tous les salariés"
       : `${PERSONNES.filter((p) => p.equipe === equipeCible || (perimetre === "plusieurs" && equipes.includes(p.equipe))).length} personnes de l'annuaire de démo`;
+  const regleBase = useRegle();
   const regle =
     role === "admin"
       ? "Tu publies directement, pour une équipe comme pour toute l'entreprise."
-      : "Tu publies seul pour ton équipe ou pour plusieurs équipes. Pour toute l'entreprise, demande l'autorisation d'un admin.";
+      : regleBase;
   const modification = !!idUrl;
 
   return (
