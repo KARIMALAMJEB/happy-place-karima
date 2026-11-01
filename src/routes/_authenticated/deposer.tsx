@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Building2, Lock, Send, Upload, Users } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { HpButton } from "@/components/hp/button";
 import { Encadre } from "@/components/hp/encadre";
@@ -75,6 +75,38 @@ function DeposerPage() {
   const [equipe, setEquipe] = useState("");
   const [erreurs, setErreurs] = useState<Record<string, string>>({});
 
+  // Brouillon : enregistré automatiquement dans ce navigateur (par compte), repris à la réouverture
+  const cle = `hp-brouillon-demande:${email}`;
+  const [repris, setRepris] = useState(false);
+  const charge = useRef(false);
+  useEffect(() => {
+    if (!email || charge.current) return;
+    charge.current = true;
+    try {
+      const b = JSON.parse(localStorage.getItem(cle) ?? "null");
+      if (b) {
+        setTitre(b.titre ?? ""); setDescription(b.description ?? ""); setBloquante(b.bloquante ?? null);
+        if (role !== "admin") setDestinataire(b.destinataire ?? null);
+        setTheme(b.theme ?? ""); setVisibilite(b.visibilite ?? null); setConfidentielle(!!b.confidentielle);
+        setRepris(true);
+      }
+    } catch { /* stockage indisponible : pas de brouillon */ }
+  }, [email, cle, role]);
+  useEffect(() => {
+    if (!email || !charge.current) return;
+    const vide = !titre && !description && !bloquante && !theme && !visibilite;
+    try {
+      if (vide) localStorage.removeItem(cle);
+      else localStorage.setItem(cle, JSON.stringify({ titre, description, bloquante, destinataire, theme, visibilite, confidentielle }));
+    } catch { /* ignoré */ }
+  }, [email, cle, titre, description, bloquante, destinataire, theme, visibilite, confidentielle]);
+  function effacerBrouillon() {
+    setTitre(""); setDescription(""); setBloquante(null); setTheme(""); setVisibilite(null); setConfidentielle(false);
+    if (role !== "admin") setDestinataire(null);
+    setRepris(false);
+    try { localStorage.removeItem(cle); } catch { /* ignoré */ }
+  }
+
   // Un manager choisit l'une de ses équipes ; collaborateur et admin : l'équipe est fixée par la base
   const equipes = useQuery({
     queryKey: ["manager_teams", "mine", email],
@@ -107,6 +139,7 @@ function DeposerPage() {
       ),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["requests"] });
+      try { localStorage.removeItem(cle); } catch { /* ignoré */ }
       toast.success("Demande envoyée");
       navigate({ to: "/demandes" });
     },
@@ -140,6 +173,12 @@ function DeposerPage() {
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
       <form onSubmit={valider} noValidate className="flex flex-col gap-6">
+        {repris && (
+          <p role="status" className="flex flex-wrap items-center justify-between gap-3 border border-line bg-neutral-1 px-4 py-3 text-[14px] leading-5">
+            <span>Brouillon repris : ton texte est enregistré automatiquement sur cet appareil.</span>
+            <button type="button" onClick={effacerBrouillon} className="underline underline-offset-4 hover:text-ink">Effacer le brouillon</button>
+          </p>
+        )}
         <Encadre title="Ta demande">
           <div className="flex flex-col gap-5 p-6">
             <div className="flex flex-col gap-2">

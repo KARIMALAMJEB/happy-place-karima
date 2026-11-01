@@ -200,3 +200,10 @@ export async function attachmentUrl(path: string): Promise<string> {
   if (error) throw error;
   return data.signedUrl;
 }
+
+// Valideurs : toutes les demandes que la base leur laisse lire (équipes du manager, ou toute l'entreprise pour l'admin)
+export async function fetchAllRequests(): Promise<RequestRow[]> {
+  const { data, error } = await sb.from("submissions").select("*").order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as RequestRow[];
+}

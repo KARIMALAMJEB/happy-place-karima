@@ -10,6 +10,7 @@ import { BloquanteMot, StatutBadge } from "@/components/hp/statut";
 import {
   VISIBILITY_LABEL,
   fetchMyRequests,
+  fetchAllRequests,
   fetchToReview,
   fetchValidatedRequests,
   refOf,
@@ -112,22 +113,25 @@ function Tableau({ lignes, perspective, vide }: { lignes: RequestRow[]; perspect
   );
 }
 
-type Tuile = { id: string; label: string; ton: "ambre" | "vert" | "rouge"; onglet: "mes" | "validees" | "traiter"; n: number; garde: (r: RequestRow) => boolean };
+type Onglet = "mes" | "validees" | "traiter" | "decidees" | "toutes";
+type Tuile = { id: string; label: string; ton: "ambre" | "vert" | "rouge"; onglet: Onglet; n: number; garde: (r: RequestRow) => boolean };
 const TRAIT = { ambre: "bg-[#B7791F]", vert: "bg-[#298646]", rouge: "bg-[#C2272D]" } as const;
 
 function DemandesPage() {
   const { email } = useOwnProfile();
   const { role } = Route.useRouteContext();
-  const [onglet, setOnglet] = useState<"mes" | "validees" | "traiter">(role === "collaborateur" ? "mes" : "traiter");
+  const [onglet, setOnglet] = useState<Onglet>(role === "collaborateur" ? "mes" : "traiter");
   const [equipe, setEquipe] = useState("");
   const [tuile, setTuile] = useState<string | null>(null);
   const mes = useQuery({ queryKey: ["requests", "mine", email], enabled: !!email, queryFn: () => fetchMyRequests(email) });
   const atraiter = useQuery({ queryKey: ["requests", "review"], enabled: role !== "collaborateur", queryFn: fetchToReview });
   const validees = useQuery({ queryKey: ["requests", "validated"], queryFn: fetchValidatedRequests });
+  const toutes = useQuery({ queryKey: ["requests", "all"], enabled: role !== "collaborateur", queryFn: fetchAllRequests });
 
   const equipes = useMemo(() => [...new Set((validees.data ?? []).map((r) => r.team))].sort(), [validees.data]);
   const mesL = mes.data ?? [];
   const aTraiterL = atraiter.data ?? [];
+  const decideesL = (toutes.data ?? []).filter((r) => r.status !== "en attente");
   const urgent = (r: RequestRow) => joursOuvres(r.created_at) >= DELAI_RELANCE;
 
   // Un chiffre = une liste : chaque tuile filtre la liste qu'elle compte
@@ -145,10 +149,10 @@ function DemandesPage() {
           { id: "mes-attente", label: "Mes demandes en attente de décision", ton: "ambre", onglet: "mes", garde: (r) => stateOf(r) === "en_attente", n: mesL.filter((r) => stateOf(r) === "en_attente").length },
         ];
   const actif = tuiles.find((t) => t.id === tuile) ?? null;
-  const filtrer = (l: RequestRow[], pour: "mes" | "validees" | "traiter") => (actif && actif.onglet === pour ? l.filter(actif.garde) : l);
+  const filtrer = (l: RequestRow[], pour: Onglet) => (actif && actif.onglet === pour ? l.filter(actif.garde) : l);
   const filtrees = filtrer((validees.data ?? []).filter((r) => !equipe || r.team === equipe), "validees");
 
-  const tab = (id: "mes" | "validees" | "traiter", label: string, n?: number) => (
+  const tab = (id: Onglet, label: string, n?: number) => (
     <button
       type="button"
       role="tab"
@@ -208,12 +212,14 @@ function DemandesPage() {
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
         <Encadre
           icon={ClipboardList}
-          title={onglet === "mes" ? "Mes demandes" : onglet === "traiter" ? (role === "manager" ? "Demandes à valider : mon équipe" : "Demandes à valider") : "Demandes visibles par tous"}
+          title={onglet === "mes" ? "Mes demandes" : onglet === "decidees" ? "Demandes décidées : mon équipe" : onglet === "toutes" ? "Toutes les demandes" : onglet === "traiter" ? (role === "manager" ? "Demandes à valider : mon équipe" : "Demandes à valider") : "Demandes visibles par tous"}
           subtitle={onglet === "validees" ? "Lecture seule ; l'auteur d'une demande confidentielle est masqué" : undefined}
           filtre={
             <div className="flex w-full flex-wrap items-center justify-between gap-3">
               <div role="tablist" className="flex">
                 {role !== "collaborateur" && tab("traiter", "À valider", aTraiterL.length)}
+                {role === "manager" && tab("decidees", "Décidées", decideesL.length)}
+                {role === "admin" && tab("toutes", "Toutes les demandes", toutes.data?.length)}
                 {tab("mes", "Mes demandes", mesL.length)}
                 {tab("validees", "Demandes visibles", validees.data?.length)}
               </div>
@@ -234,6 +240,10 @@ function DemandesPage() {
           {bandeauFiltre}
           {onglet === "traiter" ? (
             <Tableau lignes={filtrer(aTraiterL, "traiter")} perspective="valideur" vide="Aucune demande n'attend ta décision." />
+          ) : onglet === "decidees" ? (
+            <Tableau lignes={decideesL} perspective="valideur" vide="Aucune demande décidée pour le moment." />
+          ) : onglet === "toutes" ? (
+            <Tableau lignes={toutes.data ?? []} perspective="valideur" vide="Aucune demande." />
           ) : onglet === "mes" ? (
             mes.isLoading ? (
               <p className="px-6 py-6 text-ink-2">Chargement…</p>
