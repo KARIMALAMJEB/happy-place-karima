@@ -1,3 +1,4 @@
+import { Download, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { downloadAttachment } from "@/lib/dashboard";
@@ -23,7 +24,7 @@ export function AttachmentLink({ path, name }: { path?: string | null; name?: st
   if (!path) return null;
   const label = name ?? "Document joint";
   return (
-    <span className="inline-flex items-center gap-xs mt-xs max-w-full">
+    <span className="inline-flex items-center gap-2 mt-2 max-w-full">
       <a
         href="#"
         target="_blank"
@@ -32,10 +33,10 @@ export function AttachmentLink({ path, name }: { path?: string | null; name?: st
           e.preventDefault();
           void openAttachment(path);
         }}
-        className="inline-flex min-w-0 items-center gap-xs text-primary underline font-label-sm text-label-sm"
+        className="inline-flex min-w-0 items-center gap-2 text-ink underline label "
         title={`Ouvrir ${label} dans un nouvel onglet`}
       >
-        <span aria-hidden="true" className="material-symbols-outlined text-sm">picture_as_pdf</span>
+        <FileText size={14} aria-hidden />
         <span className="truncate">{label}</span>
       </a>
       <button
@@ -43,9 +44,9 @@ export function AttachmentLink({ path, name }: { path?: string | null; name?: st
         aria-label={`Télécharger ${label}`}
         title="Télécharger"
         onClick={() => downloadAttachment(path, name ?? null).catch((e) => toast.error((e as Error).message))}
-        className="inline-flex items-center text-on-surface-variant hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        className="inline-flex items-center text-ink-2 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-anthracite"
       >
-        <span aria-hidden="true" className="material-symbols-outlined text-sm">download</span>
+        <Download size={14} aria-hidden />
       </button>
     </span>
   );

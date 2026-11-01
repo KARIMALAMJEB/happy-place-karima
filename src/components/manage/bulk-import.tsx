@@ -164,13 +164,13 @@ export function BulkImport({ onImported }: { onImported: () => void }) {
 
   function cancel() { setResult(null); setSent([]); setError(null); setInputKey((k) => k + 1); }
 
-  const btn = "px-md py-xs border border-outline text-primary font-label-md text-label-md hover:bg-surface-container disabled:opacity-50";
+  const btn = "px-6 py-2 border border-field text-ink label-13  hover:bg-neutral-1 disabled:opacity-50";
   const validCount = result?.rows.filter((r) => r.status === "valide").length ?? 0;
 
   return (
-    <section className="space-y-sm bg-surface-container-lowest border border-outline-variant p-md">
-      <h2 className="font-label-md text-label-md text-primary">Importer une liste</h2>
-      <div className="flex flex-wrap items-center gap-sm">
+    <section className="space-y-4 bg-white border border-line p-6">
+      <h2 className="label-13  text-ink">Importer une liste</h2>
+      <div className="flex flex-wrap items-center gap-4">
         <button type="button" className={btn} onClick={() => downloadTemplate().catch((e) => toast.error((e as Error).message))}>
           Télécharger le modèle (.xlsx)
         </button>
@@ -181,21 +181,21 @@ export function BulkImport({ onImported }: { onImported: () => void }) {
           aria-label="Fichier CSV à importer"
           disabled={busy}
           onChange={(e) => onFile(e.target.files?.[0])}
-          className="text-body-sm"
+          className="text-[14px] leading-5"
         />
-        {busy && <span className="text-body-sm">…</span>}
+        {busy && <span className="text-[14px] leading-5">…</span>}
       </div>
-      {error && <p className="text-error text-sm">{error}</p>}
+      {error && <p className="text-[#8E1A1F] text-[14px]">{error}</p>}
       {result && (
-        <div className="space-y-sm">
-          <p className="text-body-sm text-primary">
+        <div className="space-y-4">
+          <p className="text-[14px] leading-5 text-ink">
             {result.dry_run
               ? `${result.accepted} lignes valides · ${result.rejected} lignes refusées`
               : `${result.accepted} lignes importées · ${result.rejected} lignes refusées`}
           </p>
-          <div className="flex flex-wrap gap-sm">
+          <div className="flex flex-wrap gap-4">
             {result.dry_run && (
-              <button type="button" className="px-md py-xs bg-primary text-on-primary font-label-md text-label-md disabled:opacity-50" disabled={validCount === 0 || busy} onClick={confirmImport}>
+              <button type="button" className="px-6 py-2 bg-anthracite text-on-anthracite label-13  disabled:opacity-50" disabled={validCount === 0 || busy} onClick={confirmImport}>
                 Importer les {validCount} lignes valides
               </button>
             )}
@@ -203,18 +203,18 @@ export function BulkImport({ onImported }: { onImported: () => void }) {
             <button type="button" className={btn} onClick={cancel}>Annuler</button>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-body-sm">
+            <table className="w-full text-[14px] leading-5">
               <thead>
-                <tr className="text-left border-b border-outline-variant">
-                  {["Ligne", "Nom", "Prénom", "Adresse mail", "Rôle", "Équipe", "Statut", "Motif"].map((h) => <th key={h} className="p-xs">{h}</th>)}
+                <tr className="text-left border-b border-line">
+                  {["Ligne", "Nom", "Prénom", "Adresse mail", "Rôle", "Équipe", "Statut", "Motif"].map((h) => <th key={h} className="p-2">{h}</th>)}
                 </tr>
               </thead>
               <tbody>
                 {result.rows.map((r) => (
-                  <tr key={r.line} className={`border-b border-outline-variant ${r.status === "refusée" ? "text-error" : ""}`}>
-                    <td className="p-xs">{r.line}</td><td className="p-xs">{r.last_name}</td><td className="p-xs">{r.first_name}</td>
-                    <td className="p-xs">{r.email}</td><td className="p-xs">{r.role}</td><td className="p-xs">{r.team}</td>
-                    <td className="p-xs">{r.status}</td><td className="p-xs">{r.reason}</td>
+                  <tr key={r.line} className={`border-b border-line ${r.status === "refusée" ? "text-[#8E1A1F]" : ""}`}>
+                    <td className="p-2">{r.line}</td><td className="p-2">{r.last_name}</td><td className="p-2">{r.first_name}</td>
+                    <td className="p-2">{r.email}</td><td className="p-2">{r.role}</td><td className="p-2">{r.team}</td>
+                    <td className="p-2">{r.status}</td><td className="p-2">{r.reason}</td>
                   </tr>
                 ))}
               </tbody>

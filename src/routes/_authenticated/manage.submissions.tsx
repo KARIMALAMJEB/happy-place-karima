@@ -109,9 +109,9 @@ function ManageSubmissions() {
   }
 
   return (
-    <section className="space-y-md">
+    <section className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="font-headline-sm text-headline-sm text-primary">
+        <h2 className=" text-[22px] leading-7 text-ink">
           Soumissions ({list.data?.length ?? 0})
         </h2>
         <button
@@ -120,42 +120,42 @@ function ManageSubmissions() {
             setErrors({});
             setForm({ ...empty });
           }}
-          className="px-md py-xs bg-primary text-on-primary font-label-md text-label-md"
+          className="px-6 py-2 bg-anthracite text-on-anthracite label-13 "
         >
           + NOUVELLE SOUMISSION
         </button>
       </div>
 
-      {list.isLoading && <p className="text-body-sm text-on-surface-variant">Chargement…</p>}
+      {list.isLoading && <p className="text-[14px] leading-5 text-ink-2">Chargement…</p>}
       {list.isError && (
-        <p className="text-body-sm text-error">Impossible de charger les soumissions.</p>
+        <p className="text-[14px] leading-5 text-[#8E1A1F]">Impossible de charger les soumissions.</p>
       )}
 
-      <div className="space-y-xs">
+      <div className="space-y-2">
         {list.data?.map((s) => (
           <article
             key={s.id}
-            className="flex min-w-0 overflow-hidden items-start justify-between gap-sm p-sm bg-card border border-outline-variant"
+            className="flex min-w-0 overflow-hidden items-start justify-between gap-4 p-4 bg-white border border-line"
           >
             <div className="min-w-0 flex-1">
-              <p className="font-body-md text-primary font-bold wrap-anywhere">
+              <p className="text-[14px] leading-5 text-ink font-bold wrap-anywhere">
                 {s.author_name} — {s.team}
               </p>
-              <p className="text-body-sm text-on-surface-variant italic line-clamp-3 whitespace-pre-line wrap-anywhere">“<Linkify text={s.content} />”</p>
+              <p className="text-[14px] leading-5 text-ink-2 italic line-clamp-3 whitespace-pre-line wrap-anywhere">“<Linkify text={s.content} />”</p>
               <button
                 type="button"
                 aria-haspopup="dialog"
                 onClick={() => setReading(s)}
-                className="font-label-sm text-label-sm text-primary underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="label  text-ink underline-offset-2 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-anthracite"
               >
                 Ouvrir
               </button>
               {piecesOf(s).map((f) => <AttachmentLink key={f.path} path={f.path} name={f.name} />)}
-              <p className="text-[11px] font-label-sm text-on-surface-variant uppercase mt-xs">
+              <p className="text-[11px] label text-ink-2 uppercase mt-2">
                  {submissionStatusLabels[s.status] ?? s.status} • {timeAgo(s.created_at)}
               </p>
               {s.status === "refusée" && s.rejection_category && (
-                <p className="text-body-sm text-error mt-xs wrap-anywhere">
+                <p className="text-[14px] leading-5 text-[#8E1A1F] mt-2 wrap-anywhere">
                   Motif : {s.rejection_category} — <Linkify text={s.rejection_note ?? ""} />
                 </p>
               )}
@@ -179,7 +179,7 @@ function ManageSubmissions() {
           </article>
         ))}
         {list.data?.length === 0 && (
-          <p className="text-body-sm italic text-on-surface-variant">Aucune soumission.</p>
+          <p className="text-[14px] leading-5 italic text-ink-2">Aucune soumission.</p>
         )}
       </div>
 
@@ -190,7 +190,7 @@ function ManageSubmissions() {
       />
       {form && (
         <Modal title={editing ? "Modifier la soumission" : "Nouvelle soumission"} onClose={close}>
-          <form onSubmit={submit} className="space-y-sm" noValidate>
+          <form onSubmit={submit} className="space-y-4" noValidate>
             <ErrorSummary errors={errors} />
             <Field label="Auteur" error={errors.author_name}>
               <TextInput

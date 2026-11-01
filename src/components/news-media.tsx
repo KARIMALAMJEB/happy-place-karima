@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { AlertCircle, Check, Download, ExternalLink, FileText, Image as ImageIcon, Link2, Paperclip, Pencil, Plus, Trash2, Upload, X, type LucideIcon } from "lucide-react";
 import {
   MAX_NEWS_LINKS,
   NEWS_IMAGE_TYPES,
@@ -11,14 +12,20 @@ import {
   type NewsLink,
 } from "@/lib/news-media";
 
+const ICONES: Record<string, LucideIcon> = {
+  open_in_new: ExternalLink, close: X, add: Plus, delete: Trash2, image: ImageIcon, link: Link2, upload: Upload,
+  add_photo_alternate: ImageIcon, error: AlertCircle, check: Check, edit: Pencil, attach_file: Paperclip, picture_as_pdf: FileText, download: Download,
+};
 function I({ name, className = "" }: { name: string; className?: string }) {
-  return <span aria-hidden="true" className={`material-symbols-outlined ${className}`}>{name}</span>;
+  const Icone = ICONES[name] ?? ImageIcon;
+  const px = /text-\[(\d+)px\]/.exec(className)?.[1];
+  return <Icone aria-hidden size={px ? Number(px) : 16} className={className.replace(/text-\[\d+px\]/, "").trim()} />;
 }
 
 export function NewsImage({ path, alt, className = "" }: { path: string; alt: string; className?: string }) {
   const q = useQuery({ queryKey: ["news-image", path], queryFn: () => signedNewsImageUrl(path), staleTime: 50 * 60 * 1000, retry: false });
   if (!q.data) return null;
-  return <img src={q.data} alt={alt} className={`w-full max-h-60 object-cover border border-outline-variant ${className}`} />;
+  return <img src={q.data} alt={alt} className={`w-full max-h-60 object-cover border border-line ${className}`} />;
 }
 
 export function NewsLinks({ links }: { links: unknown }) {
@@ -33,10 +40,10 @@ export function NewsLinks({ links }: { links: unknown }) {
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-start gap-1 max-w-full text-primary underline underline-offset-2 font-body-sm text-body-sm wrap-anywhere"
+            className="inline-flex items-start gap-1 max-w-full text-ink underline underline-offset-2 text-[14px] leading-5 wrap-anywhere"
           >
             <span className="wrap-anywhere">{linkDisplay(l)}</span>
-            <I name="open_in_new" className="text-sm shrink-0" />
+            <I name="open_in_new" className="text-[14px] shrink-0" />
           </a>
         </li>
       ))}
@@ -69,7 +76,7 @@ export function NewsMediaEditor({
   const pick = () => input.current?.click();
 
   return (
-    <div className="space-y-sm min-w-0">
+    <div className="space-y-4 min-w-0">
       <input
         ref={input}
         type="file"
@@ -87,30 +94,30 @@ export function NewsMediaEditor({
         }}
       />
       {hasImage && (
-        <div className="space-y-xs">
+        <div className="space-y-2">
           {preview ? (
-            <img src={preview} alt={title || "Aperçu de l'image"} className="w-full max-w-xs max-h-40 object-cover border border-outline-variant" />
+            <img src={preview} alt={title || "Aperçu de l'image"} className="w-full max-w-xs max-h-40 object-cover border border-line" />
           ) : (
             showExisting && <NewsImage path={value.existingPath!} alt={title || "Image de l'actualité"} className="max-w-xs max-h-40" />
           )}
-          <div className="flex gap-sm">
-            <button type="button" disabled={disabled} onClick={pick} className="font-label-sm text-label-sm text-primary underline disabled:opacity-50">Remplacer</button>
+          <div className="flex gap-4">
+            <button type="button" disabled={disabled} onClick={pick} className="label  text-ink underline disabled:opacity-50">Remplacer</button>
             <button
               type="button"
               disabled={disabled}
               onClick={() => onChange({ ...value, file: null, removeExisting: !!value.existingPath })}
-              className="font-label-sm text-label-sm text-error underline disabled:opacity-50"
+              className="label  text-[#8E1A1F] underline disabled:opacity-50"
             >
               Retirer
             </button>
           </div>
         </div>
       )}
-      {imgError && <p role="alert" className="text-body-sm text-error">{imgError}</p>}
+      {imgError && <p role="alert" className="text-[14px] leading-5 text-[#8E1A1F]">{imgError}</p>}
 
       {value.links.map((l, i) => (
         <div key={i} className="space-y-1 min-w-0">
-          <div className="flex flex-col sm:flex-row gap-xs min-w-0">
+          <div className="flex flex-col sm:flex-row gap-2 min-w-0">
             <input
               aria-label={`Adresse du lien ${i + 1}`}
               placeholder="https://…"
@@ -118,9 +125,9 @@ export function NewsMediaEditor({
               value={l.url}
               disabled={disabled}
               onChange={(e) => onChange({ ...value, links: value.links.map((x, j) => (j === i ? { ...x, url: e.target.value } : x)) })}
-              className="min-w-0 flex-[2] bg-card border border-outline-variant p-xs font-body-sm focus:outline-none focus:border-primary"
+              className="min-w-0 flex-[2] bg-white border border-line p-2 text-[14px] leading-5 focus:outline-none focus:border-anthracite"
             />
-            <div className="flex gap-xs min-w-0 flex-1">
+            <div className="flex gap-2 min-w-0 flex-1">
               <input
                 aria-label={`Libellé du lien ${i + 1} (facultatif)`}
                 placeholder="Libellé (facultatif)"
@@ -128,42 +135,42 @@ export function NewsMediaEditor({
                 value={l.label}
                 disabled={disabled}
                 onChange={(e) => onChange({ ...value, links: value.links.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)) })}
-                className="min-w-0 flex-1 bg-card border border-outline-variant p-xs font-body-sm focus:outline-none focus:border-primary"
+                className="min-w-0 flex-1 bg-white border border-line p-2 text-[14px] leading-5 focus:outline-none focus:border-anthracite"
               />
               <button
                 type="button"
                 aria-label={`Retirer le lien ${i + 1}`}
                 disabled={disabled}
                 onClick={() => onChange({ ...value, links: value.links.filter((_, j) => j !== i) })}
-                className="text-on-surface-variant hover:text-error"
+                className="text-ink-2 hover:text-[#8E1A1F]"
               >
                 <I name="close" />
               </button>
             </div>
           </div>
-          {linkErrs[i] && <p role="alert" className="text-body-sm text-error">{linkErrs[i]}</p>}
+          {linkErrs[i] && <p role="alert" className="text-[14px] leading-5 text-[#8E1A1F]">{linkErrs[i]}</p>}
         </div>
       ))}
 
-      <div className="flex flex-wrap gap-sm items-center">
+      <div className="flex flex-wrap gap-4 items-center">
         <button
           type="button"
           disabled={disabled}
           onClick={pick}
-          className="text-on-surface-variant flex items-center gap-xs hover:text-primary transition-colors disabled:opacity-50"
+          className="text-ink-2 flex items-center gap-2 hover:text-ink transition-colors disabled:opacity-50"
         >
-          <I name="image" /> <span className="font-label-sm text-label-sm">{hasImage ? "CHANGER LE MÉDIA" : "AJOUTER UN MÉDIA"}</span>
+          <I name="image" /> <span className="label ">{hasImage ? "CHANGER LE MÉDIA" : "AJOUTER UN MÉDIA"}</span>
         </button>
         <button
           type="button"
           disabled={disabled || full}
           title={full ? "3 liens maximum" : undefined}
           onClick={() => onChange({ ...value, links: [...value.links, { url: "", label: "" }] })}
-          className="text-on-surface-variant flex items-center gap-xs hover:text-primary transition-colors disabled:opacity-50 disabled:hover:text-on-surface-variant"
+          className="text-ink-2 flex items-center gap-2 hover:text-ink transition-colors disabled:opacity-50 disabled:hover:text-ink-2"
         >
-          <I name="link" /> <span className="font-label-sm text-label-sm">AJOUTER UN LIEN</span>
+          <I name="link" /> <span className="label ">AJOUTER UN LIEN</span>
         </button>
-        {full && <span className="font-label-sm text-label-sm text-on-surface-variant">3 liens maximum</span>}
+        {full && <span className="label  text-ink-2">3 liens maximum</span>}
       </div>
     </div>
   );

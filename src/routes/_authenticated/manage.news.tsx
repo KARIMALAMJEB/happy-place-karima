@@ -104,9 +104,9 @@ function ManageNews() {
   }
 
   return (
-    <section className="space-y-md">
+    <section className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="font-headline-sm text-headline-sm text-primary">
+        <h2 className=" text-[22px] leading-7 text-ink">
           Actualités ({list.data?.length ?? 0})
         </h2>
         <button
@@ -117,29 +117,29 @@ function ManageNews() {
             setShowLinkErrs(false);
             setForm({ ...empty });
           }}
-          className="px-md py-xs bg-primary text-on-primary font-label-md text-label-md"
+          className="px-6 py-2 bg-anthracite text-on-anthracite label-13 "
         >
           + NOUVELLE ACTUALITÉ
         </button>
       </div>
 
-      {list.isLoading && <p className="text-body-sm text-on-surface-variant">Chargement…</p>}
+      {list.isLoading && <p className="text-[14px] leading-5 text-ink-2">Chargement…</p>}
       {list.isError && (
-        <p className="text-body-sm text-error">Impossible de charger les actualités.</p>
+        <p className="text-[14px] leading-5 text-[#8E1A1F]">Impossible de charger les actualités.</p>
       )}
 
-      <div className="space-y-xs">
+      <div className="space-y-2">
         {list.data?.map((n) => (
           <article
             key={n.id}
-            className="flex flex-col sm:flex-row items-start justify-between gap-sm p-sm min-w-0 overflow-hidden bg-card border border-outline-variant"
+            className="flex flex-col sm:flex-row items-start justify-between gap-4 p-4 min-w-0 overflow-hidden bg-white border border-line"
           >
-            <div className="min-w-0 flex-1 space-y-xs">
+            <div className="min-w-0 flex-1 space-y-2">
               {n.image_path && <NewsImage path={n.image_path} alt={n.title} />}
-              <p className="font-body-md text-primary font-bold wrap-anywhere">{n.title}</p>
-              <p className="text-body-sm text-on-surface-variant line-clamp-2 wrap-anywhere">{n.body}</p>
+              <p className="text-[14px] leading-5 text-ink font-bold wrap-anywhere">{n.title}</p>
+              <p className="text-[14px] leading-5 text-ink-2 line-clamp-2 wrap-anywhere">{n.body}</p>
               <NewsLinks links={n.links} />
-              <p className="text-[11px] font-label-sm text-on-surface-variant uppercase mt-xs">
+              <p className="text-[11px] label text-ink-2 uppercase mt-2">
                  {newsStatusLabels[n.status] ?? n.status} • {n.author} • {timeAgo(n.created_at)}
               </p>
             </div>
@@ -161,13 +161,13 @@ function ManageNews() {
           </article>
         ))}
         {list.data?.length === 0 && (
-          <p className="text-body-sm italic text-on-surface-variant">Aucune actualité.</p>
+          <p className="text-[14px] leading-5 italic text-ink-2">Aucune actualité.</p>
         )}
       </div>
 
       {form && (
         <Modal title={editing ? "Modifier l'actualité" : "Nouvelle actualité"} onClose={close}>
-          <form onSubmit={submit} className="space-y-sm" noValidate>
+          <form onSubmit={submit} className="space-y-4" noValidate>
             <ErrorSummary errors={errors} />
             <Field label="Titre" error={errors.title}>
               <TextInput

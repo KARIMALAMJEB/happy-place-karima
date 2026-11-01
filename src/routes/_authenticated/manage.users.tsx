@@ -238,15 +238,15 @@ function UsersPage() {
   }
 
   return (
-    <div className="space-y-md">
+    <div className="space-y-6">
       {(queue.data ?? 0) > 0 && (
-        <div className="flex items-center justify-between gap-sm border border-error bg-surface-container-lowest p-sm">
-          <p className="text-body-sm text-error">{queue.data} document(s) en attente de suppression</p>
+        <div className="flex items-center justify-between gap-4 border border-[#8E1A1F] bg-white p-4">
+          <p className="text-[14px] leading-5 text-[#8E1A1F]">{queue.data} document(s) en attente de suppression</p>
           <button
             type="button"
             onClick={() => retry.mutate()}
             disabled={retry.isPending}
-            className="px-md py-xs border border-outline text-primary font-label-md text-label-md hover:bg-surface-container disabled:opacity-50"
+            className="px-6 py-2 border border-field text-ink label-13  hover:bg-neutral-1 disabled:opacity-50"
           >
             {retry.isPending ? "…" : "Réessayer"}
           </button>
@@ -254,14 +254,14 @@ function UsersPage() {
       )}
       <TeamsSection users={list.data ?? []} teams={teamsQuery.data ?? []} onChanged={refresh} />
       <BulkImport onImported={refresh} />
-      <form onSubmit={submit} className="flex flex-col md:flex-row gap-xs md:items-start bg-surface-container-lowest border border-outline-variant p-md">
+      <form onSubmit={submit} className="flex flex-col md:flex-row gap-2 md:items-start bg-white border border-line p-6">
         <input
           value={firstName}
           onChange={(e) => setFirstName(e.target.value)}
           placeholder="Prénom (facultatif)"
           aria-label="Prénom"
           maxLength={100}
-          className="border border-outline-variant bg-surface px-sm py-xs font-body-md"
+          className="border border-line bg-white px-4 py-2 text-[14px] leading-5"
         />
         <input
           value={lastName}
@@ -269,7 +269,7 @@ function UsersPage() {
           placeholder="Nom (facultatif)"
           aria-label="Nom"
           maxLength={100}
-          className="border border-outline-variant bg-surface px-sm py-xs font-body-md"
+          className="border border-line bg-white px-4 py-2 text-[14px] leading-5"
         />
         <div className="flex-1">
           <input
@@ -277,15 +277,15 @@ function UsersPage() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="prenom.nom@gmail.com"
             aria-label="Email Google"
-            className="w-full border border-outline-variant bg-surface px-sm py-xs font-body-md"
+            className="w-full border border-line bg-white px-4 py-2 text-[14px] leading-5"
           />
-          {err && <p className="text-error text-sm mt-1">{err}</p>}
+          {err && <p className="text-[#8E1A1F] text-[14px] mt-1">{err}</p>}
         </div>
         <select
           value={role}
           onChange={(e) => setRole(e.target.value as Row["role"])}
           aria-label="Rôle"
-          className="border border-outline-variant bg-surface px-sm py-xs font-body-md"
+          className="border border-line bg-white px-4 py-2 text-[14px] leading-5"
         >
           <option value="collaborateur">Collaborateur</option>
           <option value="manager">Manager</option>
@@ -296,31 +296,31 @@ function UsersPage() {
             value={newTeam}
             onChange={(e) => setNewTeam(e.target.value)}
             aria-label="Équipe du collaborateur"
-            className="border border-outline-variant bg-surface px-sm py-xs font-body-md"
+            className="border border-line bg-white px-4 py-2 text-[14px] leading-5"
           >
             <option value="">Choisir une équipe</option>
             {selectableTeams.map((t) => <option key={t} value={t}>{t}</option>)}
           </select>
         )}
-        <button disabled={add.isPending} className="px-md py-xs bg-primary text-on-primary font-label-md text-label-md">
+        <button disabled={add.isPending} className="px-6 py-2 bg-anthracite text-on-anthracite label-13 ">
           AJOUTER
         </button>
       </form>
 
-      <div className="border border-outline-variant divide-y divide-outline-variant bg-surface-container-lowest">
+      <div className="border border-line divide-y divide-line bg-white">
         {list.data?.map((u) => (
-          <div key={u.id} className="space-y-sm p-sm">
-            <div className="flex flex-wrap items-center justify-between gap-sm">
-              <span className="font-body-md text-primary">
-                {(u.first_name || u.last_name) && <span className="mr-xs">{[u.first_name, u.last_name].filter(Boolean).join(" ")} ·</span>}
+          <div key={u.id} className="space-y-4 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <span className="text-[14px] leading-5 text-ink">
+                {(u.first_name || u.last_name) && <span className="mr-2">{[u.first_name, u.last_name].filter(Boolean).join(" ")} ·</span>}
                 {u.email}{u.email === me && " (toi)"}
                 {u.departure_date && (
-                  <span className="ml-xs px-xs py-[1px] border border-error text-error font-label-sm text-label-sm">
+                  <span className="ml-2 px-2 py-[1px] border border-[#8E1A1F] text-[#8E1A1F] label ">
                     Part le {u.departure_date.split("-").reverse().join("/")}
                   </span>
                 )}
               </span>
-              <div className="flex gap-xs">
+              <div className="flex gap-2">
               <select
                 value={u.role}
                 onChange={(e) => {
@@ -330,7 +330,7 @@ function UsersPage() {
                   } else update.mutate({ id: u.id, role: next }, { onSuccess: () => toast.success("Rôle modifié") });
                 }}
                 aria-label={`Rôle de ${u.email}`}
-                className="border border-outline-variant bg-surface px-sm py-xs font-body-md"
+                className="border border-line bg-white px-4 py-2 text-[14px] leading-5"
               >
                 <option value="collaborateur">Collaborateur</option>
                 <option value="manager">Manager</option>
@@ -340,14 +340,14 @@ function UsersPage() {
                 onClick={() => scheduleRemoval(u)}
                 disabled={u.email === me || setDeparture.isPending}
                 title={u.email === me ? "Tu ne peux pas programmer ton propre départ" : undefined}
-                className="px-sm py-xs border border-outline text-error font-label-md text-label-md disabled:opacity-50"
+                className="px-4 py-2 border border-field text-[#8E1A1F] label-13  disabled:opacity-50"
               >
                 RETIRER (J+7)
               </button>
               </div>
             </div>
-            <div className="flex flex-wrap items-center gap-xs border-t border-outline-variant pt-sm">
-              <label className="font-label-sm text-label-sm text-on-surface-variant" htmlFor={`dep-${u.id}`}>
+            <div className="flex flex-wrap items-center gap-2 border-t border-line pt-4">
+              <label className="label  text-ink-2" htmlFor={`dep-${u.id}`}>
                 Départ prévu le
               </label>
               <input
@@ -356,13 +356,13 @@ function UsersPage() {
                 min={minDeparture}
                 value={departureInputs[u.id] ?? u.departure_date ?? ""}
                 onChange={(e) => setDepartureInputs((c) => ({ ...c, [u.id]: e.target.value }))}
-                className="border border-outline-variant bg-surface px-sm py-1 font-body-md"
+                className="border border-line bg-white px-4 py-1 text-[14px] leading-5"
               />
               <button
                 type="button"
                 disabled={setDeparture.isPending || !(departureInputs[u.id] ?? u.departure_date)}
                 onClick={() => setDeparture.mutate({ id: u.id, date: departureInputs[u.id] ?? u.departure_date ?? null })}
-                className="bg-primary text-on-primary px-sm py-1 font-label-sm text-label-sm disabled:opacity-50"
+                className="bg-anthracite text-on-anthracite px-4 py-1 label  disabled:opacity-50"
               >
                 Enregistrer
               </button>
@@ -374,20 +374,20 @@ function UsersPage() {
                     setDepartureInputs((c) => ({ ...c, [u.id]: "" }));
                     setDeparture.mutate({ id: u.id, date: null });
                   }}
-                  className="px-sm py-1 border border-outline text-primary font-label-sm text-label-sm"
+                  className="px-4 py-1 border border-field text-ink label "
                 >
                   Annuler le départ
                 </button>
               )}
             </div>
             {u.role === "collaborateur" && (
-              <div className="flex flex-wrap items-center gap-xs border-t border-outline-variant pt-sm">
-                <span className="font-label-sm text-label-sm text-on-surface-variant">ÉQUIPE :</span>
+              <div className="flex flex-wrap items-center gap-2 border-t border-line pt-4">
+                <span className="label  text-ink-2">ÉQUIPE :</span>
 <select
             value={memberTeams[u.id] ?? u.team ?? ""}
             onChange={(e) => setMemberTeams((c) => ({ ...c, [u.id]: e.target.value }))}
             aria-label={`Équipe de ${u.email}`}
-            className="border border-outline-variant bg-surface px-sm py-1 font-body-md"
+            className="border border-line bg-white px-4 py-1 text-[14px] leading-5"
           >
             <option value="">Choisir une équipe</option>
             {(u.team && !selectableTeams.includes(u.team) ? [u.team, ...selectableTeams] : selectableTeams).map((t) => <option key={t} value={t}>{t}</option>)}
@@ -410,25 +410,25 @@ function UsersPage() {
                           },
                         )
                       }
-                      className="bg-primary text-on-primary px-sm py-1 font-label-sm text-label-sm disabled:opacity-50"
+                      className="bg-anthracite text-on-anthracite px-4 py-1 label  disabled:opacity-50"
                     >
                       {saving ? "…" : "ENREGISTRER"}
                     </button>
                   );
                 })()}
-                {!u.team && <span className="text-error text-sm">Aucune équipe définie</span>}
+                {!u.team && <span className="text-[#8E1A1F] text-[14px]">Aucune équipe définie</span>}
               </div>
             )}
             {u.role === "manager" && (
-              <div className="flex flex-wrap items-center gap-xs border-t border-outline-variant pt-sm">
-                <span className="font-label-sm text-label-sm text-on-surface-variant">ÉQUIPES :</span>
+              <div className="flex flex-wrap items-center gap-2 border-t border-line pt-4">
+                <span className="label  text-ink-2">ÉQUIPES :</span>
                 {u.teams.map((team) => (
                   <button
                     key={team}
                     type="button"
                     title={`Retirer l'équipe ${team}`}
                     onClick={() => removeTeam.mutate({ allowedUserId: u.id, team })}
-                    className="border border-outline-variant bg-surface px-xs py-1 font-label-sm text-label-sm"
+                    className="border border-line bg-white px-2 py-1 label "
                   >
                     {team} ×
                   </button>
@@ -437,7 +437,7 @@ function UsersPage() {
             value={teamInputs[u.id] ?? ""}
             onChange={(e) => setTeamInputs((current) => ({ ...current, [u.id]: e.target.value }))}
             aria-label={`Ajouter une équipe à ${u.email}`}
-            className="border border-outline-variant bg-surface px-sm py-1 font-body-md"
+            className="border border-line bg-white px-4 py-1 text-[14px] leading-5"
           >
             <option value="">Choisir une équipe</option>
             {selectableTeams.filter((t) => !u.teams.includes(t)).map((t) => <option key={t} value={t}>{t}</option>)}
@@ -446,7 +446,7 @@ function UsersPage() {
                   type="button"
                   disabled={!teamInputs[u.id] || addTeam.isPending}
                   onClick={() => addTeam.mutate({ allowedUserId: u.id, team: teamInputs[u.id] ?? "" })}
-                  className="bg-primary text-on-primary px-sm py-1 font-label-sm text-label-sm disabled:opacity-50"
+                  className="bg-anthracite text-on-anthracite px-4 py-1 label  disabled:opacity-50"
                 >
                   {addTeam.isPending && addTeam.variables?.allowedUserId === u.id ? "…" : "AJOUTER"}
                 </button>
@@ -454,10 +454,10 @@ function UsersPage() {
             )}
           </div>
         ))}
-        {list.isLoading && <p className="p-sm">Chargement…</p>}
+        {list.isLoading && <p className="p-4">Chargement…</p>}
       </div>
       <Dialog open={!!roleDialog} onOpenChange={(o) => !o && setRoleDialog(null)}>
-        <DialogContent>
+        <DialogContent className="hp-shell rounded-none border border-anthracite bg-white p-6 text-ink">
           <DialogHeader>
             <DialogTitle>Équipe de {roleDialog?.email}</DialogTitle>
           </DialogHeader>
@@ -465,13 +465,13 @@ function UsersPage() {
             value={roleDialog?.team ?? ""}
             onChange={(e) => roleDialog && setRoleDialog({ ...roleDialog, team: e.target.value })}
             aria-label="Équipe du collaborateur"
-            className="w-full border border-outline-variant bg-surface px-sm py-xs font-body-md"
+            className="w-full border border-line bg-white px-4 py-2 text-[14px] leading-5"
           >
             <option value="">Choisir une équipe</option>
             {selectableTeams.map((t) => <option key={t} value={t}>{t}</option>)}
           </select>
           <DialogFooter>
-            <button type="button" onClick={() => setRoleDialog(null)} className="px-md py-xs border border-outline text-primary font-label-md text-label-md">Annuler</button>
+            <button type="button" onClick={() => setRoleDialog(null)} className="px-6 py-2 border border-field text-ink label-13 ">Annuler</button>
             <button
               type="button"
               disabled={!roleDialog?.team || update.isPending}
@@ -483,7 +483,7 @@ function UsersPage() {
                   { onSuccess: () => { toast.success("Rôle modifié"); setRoleDialog(null); } },
                 );
               }}
-              className="px-md py-xs bg-primary text-on-primary font-label-md text-label-md disabled:opacity-50"
+              className="px-6 py-2 bg-anthracite text-on-anthracite label-13  disabled:opacity-50"
             >
               {update.isPending ? "…" : "Enregistrer"}
             </button>
@@ -535,12 +535,12 @@ function TeamsSection({ users, teams, onChanged }: { users: Row[]; teams: { name
     setErr(null);
     create.mutate(p.data);
   }
-  const btn = "px-sm py-1 border border-outline text-primary font-label-sm text-label-sm disabled:opacity-50";
+  const btn = "px-4 py-1 border border-field text-ink label  disabled:opacity-50";
 
   return (
-    <section className="space-y-sm bg-surface-container-lowest border border-outline-variant p-md">
-      <h2 className="font-label-md text-label-md text-primary">Équipes</h2>
-      <form onSubmit={submit} className="flex flex-wrap items-start gap-xs">
+    <section className="space-y-4 bg-white border border-line p-6">
+      <h2 className="label-13  text-ink">Équipes</h2>
+      <form onSubmit={submit} className="flex flex-wrap items-start gap-2">
         <div>
           <input
             value={name}
@@ -548,27 +548,27 @@ function TeamsSection({ users, teams, onChanged }: { users: Row[]; teams: { name
             placeholder="Nouvelle équipe"
             aria-label="Nouvelle équipe"
             maxLength={60}
-            className="border border-outline-variant bg-surface px-sm py-xs font-body-md"
+            className="border border-line bg-white px-4 py-2 text-[14px] leading-5"
           />
-          {err && <p className="text-error text-sm mt-1">{err}</p>}
+          {err && <p className="text-[#8E1A1F] text-[14px] mt-1">{err}</p>}
         </div>
-        <button disabled={create.isPending} className="px-md py-xs bg-primary text-on-primary font-label-md text-label-md">AJOUTER</button>
+        <button disabled={create.isPending} className="px-6 py-2 bg-anthracite text-on-anthracite label-13 ">AJOUTER</button>
       </form>
-      <ul className="divide-y divide-outline-variant border border-outline-variant">
+      <ul className="divide-y divide-line border border-line">
         {teams.map((t) => (
-          <li key={t.name} className="flex flex-wrap items-center justify-between gap-xs p-xs">
+          <li key={t.name} className="flex flex-wrap items-center justify-between gap-2 p-2">
             {editing?.from === t.name ? (
-              <span className="flex flex-wrap gap-xs">
+              <span className="flex flex-wrap gap-2">
                 <input
                   value={editing.to}
                   onChange={(e) => setEditing({ ...editing, to: e.target.value })}
                   aria-label={`Nouveau nom pour ${t.name}`}
                   maxLength={60}
-                  className="border border-outline-variant bg-surface px-sm py-1 font-body-md"
+                  className="border border-line bg-white px-4 py-1 text-[14px] leading-5"
                 />
                 <button
                   type="button"
-                  className="bg-primary text-on-primary px-sm py-1 font-label-sm text-label-sm"
+                  className="bg-anthracite text-on-anthracite px-4 py-1 label "
                   disabled={rename.isPending}
                   onClick={() => {
                     const p = teamSchema.safeParse(editing.to);
@@ -581,17 +581,17 @@ function TeamsSection({ users, teams, onChanged }: { users: Row[]; teams: { name
                 <button type="button" className={btn} onClick={() => setEditing(null)}>Annuler</button>
               </span>
             ) : (
-              <span className="font-body-md text-primary">
-                {t.is_reserved && <span aria-label="Équipe réservée" title="Équipe réservée" className="mr-xs">🔒</span>}
-                {t.name} <span className="text-on-surface-variant text-body-sm">· {count(t.name)} personne(s)</span>
+              <span className="text-[14px] leading-5 text-ink">
+                {t.is_reserved && <span aria-label="Équipe réservée" title="Équipe réservée" className="mr-2">🔒</span>}
+                {t.name} <span className="text-ink-2 text-[14px] leading-5">· {count(t.name)} personne(s)</span>
               </span>
             )}
             {!t.is_reserved && editing?.from !== t.name && (
-              <span className="flex gap-xs">
+              <span className="flex gap-2">
                 <button type="button" className={btn} onClick={() => setEditing({ from: t.name, to: t.name })}>Renommer</button>
                 <button
                   type="button"
-                  className={`${btn} text-error`}
+                  className={`${btn} text-[#8E1A1F]`}
                   disabled={del.isPending}
                   onClick={() => confirm(`Supprimer l'équipe « ${t.name} » ?`) && del.mutate(t.name)}
                 >
