@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
+import { HpButton } from "@/components/hp/button";
 import {
   downloadAttachment,
   downloadDepartureZip,
@@ -19,7 +20,7 @@ export function DepartureNotices({ email }: { email: string }) {
   });
   if (!q.data?.length) return null;
   return (
-    <div className="space-y-xs">
+    <div className="flex flex-col gap-3">
       {q.data.map((n) => (
         <NoticeBanner key={n.id} notice={n} email={email} />
       ))}
@@ -60,42 +61,40 @@ function NoticeBanner({ notice: n, email }: { notice: DepartureNotice; email: st
     }
   }
 
-  const btn = "px-sm py-1 border border-outline text-primary font-label-sm text-label-sm hover:bg-surface-container disabled:opacity-50";
-
   return (
     <div
       role={reminder ? "alert" : "status"}
-      className={`p-sm border space-y-xs ${reminder ? "border-error bg-error-container text-on-error-container" : "border-outline-variant bg-surface-container-lowest"}`}
+      className="flex flex-col gap-3 border border-line border-l-4 border-l-anthracite bg-neutral-1 px-6 py-4"
     >
-      <p className="font-body-md">
+      <p className="text-[14px] leading-5">
         {reminder && <strong>Rappel : </strong>}
         {text}
       </p>
-      <div className="flex flex-wrap gap-xs">
+      <div className="flex flex-wrap gap-3">
         {count > 0 && (
           <>
-            <button type="button" className={btn} onClick={() => setOpen((o) => !o)} aria-expanded={open}>
-              {open ? "Masquer les documents" : "Voir les documents"}
-            </button>
-            <button type="button" className={btn} onClick={zipAll} disabled={zipping}>
-              {zipping ? "Préparation…" : "Tout télécharger (.zip)"}
-            </button>
+            <HpButton role="consulte" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+              {open ? "MASQUER LES DOCUMENTS" : "VOIR LES DOCUMENTS"}
+            </HpButton>
+            <HpButton role="consulte" onClick={zipAll} disabled={zipping}>
+              {zipping ? "PRÉPARATION…" : "TOUT TÉLÉCHARGER (.ZIP)"}
+            </HpButton>
           </>
         )}
-        <button type="button" className={btn} onClick={() => mark.mutate()} disabled={mark.isPending}>
-          {count > 0 ? "J'ai téléchargé les documents" : "J'ai pris note"}
-        </button>
+        <HpButton role="modifie" onClick={() => mark.mutate()} disabled={mark.isPending}>
+          {count > 0 ? "J'AI TÉLÉCHARGÉ LES DOCUMENTS" : "J'AI PRIS NOTE"}
+        </HpButton>
       </div>
       {open && (
-        <ul className="border-t border-outline-variant pt-xs space-y-xs">
+        <ul className="flex flex-col gap-1 border-t border-line pt-3">
           {n.documents.map((d) => (
-            <li key={d.path} className="flex flex-wrap items-center justify-between gap-xs text-body-sm">
+            <li key={d.path} className="flex flex-wrap items-center justify-between gap-3 text-[14px] leading-5">
               <span>
-                <span className="font-bold">{frDate(d.created_at)}</span> — {d.excerpt}
+                <span className="font-semibold">{frDate(d.created_at)}</span> — {d.excerpt}
               </span>
               <button
                 type="button"
-                className="text-primary underline font-label-sm text-label-sm"
+                className="inline-flex h-11 cursor-pointer items-center px-1 text-[14px] leading-5 font-semibold text-anthracite underline underline-offset-4 hover:text-ink"
                 onClick={() => downloadAttachment(d.path, d.name).catch((e) => toast.error((e as Error).message))}
               >
                 Télécharger
