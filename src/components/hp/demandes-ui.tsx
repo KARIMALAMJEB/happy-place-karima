@@ -61,8 +61,17 @@ function Ligne({ r, perspective }: { r: RequestRow; perspective: Perspective }) 
   const auteur = perspective === "auteur" ? null : r.confidential_identity && perspective === "lecteur" ? "Auteur confidentiel" : r.author_name;
   const attente = etat === "en_attente" ? joursOuvres(r.created_at) : 0;
   const nl = perspective === "auteur" && nonLue(r);
+  // Une réponse a été donnée (validée, refusée ou à compléter) : on la met en évidence pour l'auteur
+  const repondue = perspective === "auteur" && !!r.decided_at && etat !== "en_attente";
   return (
-    <div role="row" className={cn(GRILLE, "relative min-h-16 items-center border-t border-line bg-white py-2 pr-4 pl-6")}>
+    <div
+      role="row"
+      className={cn(
+        GRILLE,
+        "relative min-h-16 items-center border-t border-line py-2 pr-4 pl-6",
+        nl ? "bg-[#FBF1E4]" : repondue ? "bg-neutral-1" : "bg-white",
+      )}
+    >
       <TraitStatut ton={tonOf(etat, r.done && etat === "validee")} />
       <span role="cell" className="flex min-w-0 flex-col gap-0.5">
         <Link
@@ -75,10 +84,18 @@ function Ligne({ r, perspective }: { r: RequestRow; perspective: Perspective }) 
         <span className="text-[12px] leading-4 text-ink-2">
           {refOf(r)} · {r.team}{auteur ? ` · ${auteur}` : ""}
         </span>
-        {nl && (
-          <span className="inline-flex items-center gap-1.5 text-[12px] leading-4 font-semibold text-field">
-            <span aria-hidden className="size-2 bg-anthracite" />
-            Réponse non lue
+        {repondue && (
+          <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] leading-4">
+            {nl ? (
+              <span className="inline-flex items-center gap-1.5 bg-anthracite px-2 py-0.5 text-[11px] leading-4 font-bold tracking-wide text-white uppercase">
+                Nouvelle réponse
+              </span>
+            ) : (
+              <span className="font-semibold text-ink">Réponse reçue</span>
+            )}
+            <span className="text-ink-2">
+              {r.decided_by_name ? `de ${r.decided_by_name} · ` : ""}{date(r.decided_at!)}
+            </span>
           </span>
         )}
       </span>

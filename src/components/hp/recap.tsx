@@ -1,3 +1,4 @@
+import { Check, Filter, X } from "lucide-react";
 import { DELAI_RELANCE, joursOuvres } from "@/components/hp/demandes-ui";
 import { nonLue, stateOf, type RequestRow } from "@/lib/requests";
 import type { AppRole } from "@/lib/auth";
@@ -44,15 +45,42 @@ export function RecapTuiles({ tuiles, actif, onChoisir }: { tuiles: Tuile[]; act
             onClick={() => onChoisir(pris ? null : t)}
             className={cn(
               "relative flex min-h-14 cursor-pointer items-center gap-3 border border-line py-2 pr-3 pl-5 text-left",
-              pris ? "border-2 border-anthracite bg-white" : "bg-white hover:border-anthracite",
+              pris ? "border-2 border-anthracite bg-anthracite text-white" : "bg-white hover:border-anthracite",
             )}
           >
-            <span aria-hidden className={cn("absolute inset-y-0 left-0 w-1", TRAIT[t.ton])} />
-            <span className="font-title text-[20px] leading-7 font-bold text-ink">{t.n}</span>
-            <span className="text-[12px] leading-4 text-ink-2">{t.label}</span>
+            <span aria-hidden className={cn("absolute inset-y-0 left-0 w-1.5", TRAIT[t.ton])} />
+            <span className={cn("font-title text-[20px] leading-7 font-bold", pris ? "text-white" : "text-ink")}>{t.n}</span>
+            <span className={cn("flex-1 text-[12px] leading-4", pris ? "font-semibold text-white" : "text-ink-2")}>{t.label}</span>
+            {pris && (
+              <span aria-hidden className="flex shrink-0 items-center gap-1 text-[11px] leading-4 font-bold tracking-wide text-white uppercase">
+                <Check size={14} /> Filtre actif
+              </span>
+            )}
           </button>
         );
       })}
+    </div>
+  );
+}
+
+// Bandeau du filtre actif, placé au-dessus de la liste filtrée (accueil et page Demandes)
+export function BandeauFiltre({ label, n, onRetirer }: { label: string; n?: number; onRetirer: () => void }) {
+  return (
+    <div role="status" className="flex w-full flex-wrap items-center justify-between gap-3 border-l-4 border-l-anthracite bg-neutral-1 px-4 py-2">
+      <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] leading-5">
+        <span className="inline-flex items-center gap-1.5 bg-anthracite px-2 py-0.5 text-[11px] leading-4 font-bold tracking-wide text-white uppercase">
+          <Filter size={12} aria-hidden /> Filtre actif
+        </span>
+        <span className="font-semibold">{label}</span>
+        {n !== undefined && <span className="text-ink-2">· {n} demande{n > 1 ? "s" : ""}</span>}
+      </p>
+      <button
+        type="button"
+        onClick={onRetirer}
+        className="label-13 inline-flex h-11 cursor-pointer items-center gap-1.5 border-[1.5px] border-field bg-white px-3 text-anthracite hover:bg-neutral-1"
+      >
+        <X size={14} aria-hidden /> RETIRER LE FILTRE
+      </button>
     </div>
   );
 }

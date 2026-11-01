@@ -7,7 +7,7 @@ import { Encadre } from "@/components/hp/encadre";
 import { HpButton } from "@/components/hp/button";
 import { HpPage, useOwnProfile } from "@/components/hp/page";
 import { ReglesArbitrage } from "@/components/hp/regles";
-import { RecapTuiles, buildTuiles, type Onglet } from "@/components/hp/recap";
+import { BandeauFiltre, RecapTuiles, buildTuiles, type Onglet } from "@/components/hp/recap";
 import { DELAI_RELANCE, Tableau, joursOuvres } from "@/components/hp/demandes-ui";
 import {
   VISIBILITY_LABEL,
@@ -66,11 +66,11 @@ function DemandesPage() {
     </button>
   );
 
+  const nFiltrees = actif ? (actif.onglet === "traiter" ? aTraiterL : mesL).filter(actif.garde).length : 0;
   const bandeauFiltre = actif && (
-    <p className="flex min-h-11 items-center justify-between gap-4 border-t border-line px-6 py-2 text-[14px] leading-5">
-      <span>Filtre : <span className="font-semibold">{actif.label}</span></span>
-      <button type="button" onClick={() => setTuile(null)} className="underline underline-offset-4 hover:text-ink">Retirer le filtre</button>
-    </p>
+    <div className="border-t border-line px-6 py-3">
+      <BandeauFiltre label={actif.label} n={nFiltrees} onRetirer={() => setTuile(null)} />
+    </div>
   );
 
   return (

@@ -12,7 +12,7 @@ import { HpButton, HpIconButton } from "@/components/hp/button";
 import { Tableau } from "@/components/hp/demandes-ui";
 import { Encadre, Picto } from "@/components/hp/encadre";
 import { HpPage, useOwnProfile } from "@/components/hp/page";
-import { RecapTuiles, buildTuiles } from "@/components/hp/recap";
+import { BandeauFiltre, RecapTuiles, buildTuiles } from "@/components/hp/recap";
 import { NewsImage } from "@/components/news-media";
 import { NewsReader } from "@/components/news-reader";
 import {
@@ -132,14 +132,14 @@ function Accueil() {
         </div>
 
         <Encadre id="mes-demandes" icon={ClipboardList} title="Mes demandes" compteur={`${filtre(mesL, "mes").length} demande(s)`}
-          filtre={actif && actif.onglet === "mes" ? <BandeauFiltre label={actif.label} onRetirer={() => setTuile(null)} /> : undefined}>
+          filtre={actif && actif.onglet === "mes" ? <BandeauFiltre label={actif.label} n={filtre(mesL, "mes").length} onRetirer={() => setTuile(null)} /> : undefined}>
           <Tableau lignes={filtre(mesL, "mes").slice(0, LIGNES)} perspective="auteur" vide="Tu n'as pas encore déposé de demande." />
           <VoirTout n={filtre(mesL, "mes").length} />
         </Encadre>
 
         {peutRediger && (
           <Encadre id="a-valider" icon={ClipboardList} title={role === "manager" ? "Demandes à valider : mon équipe" : "Demandes à valider"} compteur={`${filtre(aTraiterL, "traiter").length} demande(s)`}
-            filtre={actif && actif.onglet === "traiter" ? <BandeauFiltre label={actif.label} onRetirer={() => setTuile(null)} /> : undefined}>
+            filtre={actif && actif.onglet === "traiter" ? <BandeauFiltre label={actif.label} n={filtre(aTraiterL, "traiter").length} onRetirer={() => setTuile(null)} /> : undefined}>
             <Tableau lignes={filtre(aTraiterL, "traiter").slice(0, LIGNES)} perspective="valideur" vide="Aucune demande n'attend ta décision." />
             <VoirTout n={filtre(aTraiterL, "traiter").length} />
           </Encadre>
@@ -237,15 +237,6 @@ function Accueil() {
       <BlockerArchive open={archive} onClose={() => setArchive(false)} />
       <NewsReader news={lecture} onClose={() => setLecture(null)} />
     </HpPage>
-  );
-}
-
-function BandeauFiltre({ label, onRetirer }: { label: string; onRetirer: () => void }) {
-  return (
-    <p className="flex w-full items-center justify-between gap-4 text-[14px] leading-5">
-      <span>Filtre : <span className="font-semibold">{label}</span></span>
-      <button type="button" onClick={onRetirer} className="underline underline-offset-4 hover:text-ink">Retirer le filtre</button>
-    </p>
   );
 }
 
