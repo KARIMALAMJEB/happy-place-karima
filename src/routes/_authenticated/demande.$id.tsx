@@ -274,57 +274,9 @@ function DemandeDetail() {
               <Citation pied={r.decided_at ? `Émis le ${date(r.decided_at)}` : undefined}>{r.rejection_note}</Citation>
             )}
             {estAuteur && (
-              <div className="flex flex-col gap-3 border-t border-line pt-4">
-                {questions.map((x, i) => (
-                  <div key={i} className="flex flex-col gap-2">
-                    <label htmlFor={`reponse-${i}`} className="text-[14px] leading-5 font-semibold text-ink">{i + 1}. {x}</label>
-                    <textarea
-                      id={`reponse-${i}`}
-                      className={`${champ} min-h-24 py-2`}
-                      value={reponses[i] ?? ""}
-                      maxLength={1000}
-                      onChange={(e) => setReponses(questions.map((_, j) => (j === i ? e.target.value : (reponses[j] ?? ""))))}
-                    />
-                  </div>
-                ))}
-                <div className="flex flex-col gap-2">
-                  <label htmlFor="infos" className="label text-ink">Informations complémentaires (facultatif)</label>
-                  <textarea id="infos" className={`${champ} min-h-20 py-2`} value={infos} maxLength={1000} onChange={(e) => setInfos(e.target.value)} />
-                </div>
-                <span className="label text-ink">Documents justificatifs (facultatif)</span>
-                <label className="flex cursor-pointer flex-col items-center gap-2 border border-dashed border-field bg-neutral-1 px-6 py-6 text-center hover:bg-neutral-2">
-                  <Upload size={20} aria-hidden />
-                  <span className="text-[14px] leading-5"><span className="font-semibold underline underline-offset-4">Parcourir tes dossiers</span> pour joindre des PDF</span>
-                  <span className="text-[12px] leading-4 text-ink-2">PDF uniquement · 20 Mo maximum par fichier · {MAX_JUSTIFICATIFS} fichiers maximum</span>
-                  <input
-                    type="file"
-                    multiple
-                    accept="application/pdf,.pdf"
-                    className="sr-only"
-                    onChange={(e) => {
-                      const choisis = Array.from(e.target.files ?? []);
-                      e.target.value = "";
-                      const valides = choisis.filter((f) => f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf"));
-                      if (valides.length < choisis.length) setErreurFichier("Seuls les fichiers PDF sont acceptés.");
-                      else if (valides.some((f) => f.size > MAX_PDF_BYTES)) setErreurFichier("Un fichier dépasse 20 Mo.");
-                      else if (fichiers.length + valides.length > MAX_JUSTIFICATIFS) setErreurFichier(`${MAX_JUSTIFICATIFS} documents au maximum.`);
-                      else { setErreurFichier(""); setFichiers([...fichiers, ...valides]); }
-                    }}
-                  />
-                </label>
-                {erreurFichier && <p role="alert" className="text-[12px] font-semibold text-[#8E1A1F]">{erreurFichier}</p>}
-                {fichiers.map((f, i) => (
-                  <p key={`${f.name}-${i}`} className="flex items-center justify-between gap-3 border border-line px-4 py-2 text-[14px] leading-5">
-                    <span className="truncate">{f.name}</span>
-                    <button type="button" onClick={() => setFichiers(fichiers.filter((_, j) => j !== i))} className="cursor-pointer underline underline-offset-4 hover:text-ink">Retirer</button>
-                  </p>
-                ))}
-                <div>
-                  <HpButton type="button" role="modifie" icon={Send} disabled={completer.isPending || !questions.every((_, i) => (reponses[i] ?? "").trim().length >= 2)} onClick={() => completer.mutate()}>
-                    RENVOYER MA DEMANDE
-                  </HpButton>
-                </div>
-              </div>
+              <Link to="/completer/$id" params={{ id: r.id }} className={`${hpButtonVariants({ role: "modifie" })} w-fit`}>
+                <span>COMPLÉTER MA DEMANDE</span>
+              </Link>
             )}
           </Bloc>
         )}
