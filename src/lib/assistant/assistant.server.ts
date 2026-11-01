@@ -158,7 +158,7 @@ export async function repondre(question: string, profil: Profil, actualites: Act
     .filter((d) => d.type === "Guide" && !dejaLa.has(d.titre))
     .map((d) => ({ titre: d.titre, type: d.type, lien: d.lien, score: 0, phrases: d.phrases.slice(0, 2), texte: d.phrases.join(" ") }));
   const trouves = contexte;
-  contexte = [...contexte, ...guide].slice(0, 16);
+  contexte = [...contexte, ...guide].slice(0, 24);
   if (contexte.length === 0) return journaliser(profil.id, diag(rien(false), "aucun contenu lisible"));
   try {
     const texte = await appelerModele(q, contexte);
