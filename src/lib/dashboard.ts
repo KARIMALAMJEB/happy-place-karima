@@ -20,6 +20,10 @@ export type News = {
   links?: unknown;
   scope?: "entreprise" | "equipes";
   teams?: string[];
+  requested_at?: string | null;
+  authorized_by?: string | null;
+  authorized_at?: string | null;
+  refusal_note?: string | null;
 };
 
 export type Submission = {
@@ -130,10 +134,39 @@ export async function publishDraftNews(id: string) {
     .from("news")
     .update({ status: "publiée" })
     .eq("id", id)
-    .eq("status", "brouillon")
+    .in("status", ["brouillon", "autorisée"])
     .select("id");
   if (error) throw error;
   if (!data?.length) throw new Error("Vous n'avez pas le droit de publier cette actualité.");
+}
+
+// Annonce « Toute l'entreprise » : l'auteur demande l'autorisation d'un admin (nouvelle demande possible après un refus)
+export async function requestNewsAuthorization(id: string) {
+  const { data, error } = await db.from("news").update({ status: "en attente" }).eq("id", id).in("status", ["brouillon", "refusée"]).select("id");
+  if (error) throw error;
+  if (!data?.length) throw new Error("La demande d'autorisation n'a pas pu être envoyée.");
+}
+
+export async function authorizeNews(input: { id: string; by: string }) {
+  const { data, error } = await db
+    .from("news")
+    .update({ status: "autorisée", authorized_by: input.by, authorized_at: new Date().toISOString(), refusal_note: null })
+    .eq("id", input.id)
+    .eq("status", "en attente")
+    .select("id");
+  if (error) throw error;
+  if (!data?.length) throw new Error("Cette annonce n'est plus à autoriser.");
+}
+
+export async function refuseNews(input: { id: string; note: string }) {
+  const { data, error } = await db
+    .from("news")
+    .update({ status: "refusée", refusal_note: input.note })
+    .eq("id", input.id)
+    .eq("status", "en attente")
+    .select("id");
+  if (error) throw error;
+  if (!data?.length) throw new Error("Cette annonce n'est plus à autoriser.");
 }
 
 export async function deleteDraftNews(id: string, imagePath?: string | null) {

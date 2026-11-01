@@ -27,6 +27,7 @@ function Rediger() {
   const { id } = Route.useSearch();
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const { role } = Route.useRouteContext();
   const { email, fullName } = useOwnProfile();
   const news = useQuery({ queryKey: ["news"], queryFn: fetchNews, retry: false });
   const [titre, setTitre] = useState("");
@@ -124,6 +125,9 @@ function Rediger() {
                   </label>
                 ))}
               </div>
+              {scope === "entreprise" && role === "manager" && (
+                <p className="text-[12px] leading-4 text-ink-2">Pour toute l'entreprise, un admin doit autoriser l'annonce avant que tu puisses la publier.</p>
+              )}
               {scope === "equipes" && (
                 <div className="flex flex-wrap gap-3" role="group" aria-label="Équipes concernées">
                   {(toutesEquipes.data ?? []).map((t) => (

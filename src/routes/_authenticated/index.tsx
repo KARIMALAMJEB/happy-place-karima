@@ -17,7 +17,7 @@ import { NewsImage } from "@/components/news-media";
 import { NewsReader } from "@/components/news-reader";
 import {
   deleteDraftNews, deltaText, exportMyRecentSubmissions, fetchBlockers, fetchMetrics, fetchNews, formatMetricValue,
-  publishDraftNews, timeAgo, updateBlockerStatus, TREND_LABELS, type News,
+  publishDraftNews, requestNewsAuthorization, authorizeNews, refuseNews, timeAgo, updateBlockerStatus, TREND_LABELS, type News,
 } from "@/lib/dashboard";
 import { fetchAllRequests, fetchMyRequests, fetchToReview, fetchValidatedRequests } from "@/lib/requests";
 import { BOITE_A_OUTILS, ICONES_OUTILS } from "@/lib/outils";
@@ -83,6 +83,24 @@ function Accueil() {
     onSuccess: () => { toast.success("Actualité publiée"); qc.invalidateQueries({ queryKey: ["news"] }); },
     onError,
   });
+  const invalider = () => qc.invalidateQueries({ queryKey: ["news"] });
+  const demander = useMutation({
+    mutationFn: requestNewsAuthorization,
+    onSuccess: () => { toast.success("Demande envoyée : un admin doit autoriser cette annonce"); invalider(); },
+    onError,
+  });
+  const autoriser = useMutation({
+    mutationFn: (n: News) => authorizeNews({ id: n.id, by: fullName }),
+    onSuccess: (_r, n) => { toast.success(`Annonce autorisée : ${n.author.split(" ")[0]} peut la publier`); invalider(); },
+    onError,
+  });
+  const refuser = useMutation({
+    mutationFn: refuseNews,
+    onSuccess: () => { toast.success("Annonce refusée : l'auteur voit ton explication"); setRefusId(null); setMotif(""); invalider(); },
+    onError,
+  });
+  const [refusId, setRefusId] = useState<string | null>(null);
+  const [motif, setMotif] = useState("");
   const supprimer = useMutation({
     mutationFn: (n: News) => deleteDraftNews(n.id, n.image_path),
     onSuccess: () => { toast.success("Brouillon supprimé"); qc.invalidateQueries({ queryKey: ["news"] }); },
@@ -90,9 +108,12 @@ function Accueil() {
   });
 
   const publiees = (news.data ?? []).filter((n) => n.status === "publiée");
+  const suiviStatuts = ["brouillon", "en attente", "autorisée", "refusée"];
   const brouillons = (news.data ?? []).filter(
-    (n) => n.status === "brouillon" && (role === "admin" || (n.author_email ?? "").toLowerCase() === myEmail),
+    (n) => suiviStatuts.includes(n.status) && ((n.author_email ?? "").toLowerCase() === myEmail || (role === "admin" && n.status === "brouillon")),
   );
+  const aAutoriser = (news.data ?? []).filter((n) => n.status === "en attente");
+  const LIBELLE_PUB: Record<string, string> = { brouillon: "Brouillon", "en attente": "En attente d'autorisation", autorisée: "Autorisée", refusée: "Refusée" };
 
   return (
     <HpPage>
@@ -189,26 +210,77 @@ function Accueil() {
           )}
         </Encadre>
 
+        {role === "admin" && (
+          <Encadre id="a-autoriser" icon={FileText} title="Annonces à autoriser" subtitle="Annonces « Toute l'entreprise » demandées par les managers" compteur={`${aAutoriser.length} annonce${aAutoriser.length > 1 ? "s" : ""}`}>
+            {aAutoriser.length === 0 ? (
+              <p className="px-6 py-6 text-[14px] leading-5 text-ink-2">Rien à autoriser pour le moment.</p>
+            ) : (
+              <ul className="flex flex-col gap-4 p-6">
+                {aAutoriser.map((n) => (
+                  <li key={n.id} className="relative flex flex-col gap-3 border border-line bg-white py-4 pr-5 pl-6">
+                    <span aria-hidden className="absolute inset-y-0 left-0 w-1 bg-[#B8651B]" />
+                    <h3 className="text-[18px] leading-6">{n.title}</h3>
+                    <p className="text-[12px] leading-4 text-ink-2">{n.author} · Demandée le {date(n.requested_at ?? n.created_at)} · Toute l'entreprise</p>
+                    {n.body && <p className="line-clamp-2 max-w-[80ch] text-[14px] leading-5">{n.body.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()}</p>}
+                    {refusId === n.id ? (
+                      <div className="flex flex-col gap-2 border-t border-line pt-3">
+                        <label htmlFor={`motif-${n.id}`} className="label text-ink">Explication * <span className="text-ink-2 normal-case">({motif.length} / 500)</span></label>
+                        <textarea id={`motif-${n.id}`} rows={3} maxLength={500} value={motif} onChange={(e) => setMotif(e.target.value)} className="w-full border border-field bg-white px-3 py-2 text-[14px] leading-5" />
+                        <div className="flex flex-wrap justify-end gap-3">
+                          <HpButton role="consulte" onClick={() => { setRefusId(null); setMotif(""); }}>ANNULER</HpButton>
+                          <HpButton role="refuse" disabled={!motif.trim() || refuser.isPending} onClick={() => refuser.mutate({ id: n.id, note: motif.trim() })}>CONFIRMER LE REFUS</HpButton>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap justify-end gap-3 border-t border-line pt-3">
+                        <HpButton role="refuse" onClick={() => { setRefusId(n.id); setMotif(""); }}>REFUSER AVEC MOTIF</HpButton>
+                        <HpButton role="valide" disabled={autoriser.isPending} onClick={() => autoriser.mutate(n)}>AUTORISER</HpButton>
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Encadre>
+        )}
+
         {peutRediger && (
-          <Encadre id="brouillons" icon={FileText} title="Mes brouillons" compteur={`${brouillons.length} brouillon${brouillons.length > 1 ? "s" : ""}`}>
+          <Encadre id="brouillons" icon={FileText} title="Mes publications" compteur={`${brouillons.length} actualité${brouillons.length > 1 ? "s" : ""}`}>
             {brouillons.length === 0 ? (
               <p className="px-6 py-6 text-[14px] leading-5 text-ink-2">Aucun brouillon en cours.</p>
             ) : (
               <ul className="grid gap-4 p-6 sm:grid-cols-2">
-                {brouillons.map((n) => (
-                  <li key={n.id} className="relative flex flex-col gap-3 border border-line bg-white py-4 pr-5 pl-6">
-                    <span aria-hidden className="absolute inset-y-0 left-0 w-1 bg-line" />
-                    <h3 className="font-body text-[16px] leading-6 font-semibold">{n.title}</h3>
-                    <p className="text-[12px] leading-4 text-ink-2">Créé le {date(n.created_at)} · Par {n.author}</p>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <HpButton role="principal" icon={Send} disabled={publier.isPending} onClick={() => publier.mutate(n.id)}>PUBLIER</HpButton>
-                      <Link to="/rediger" search={{ id: n.id }} className="label-13 text-anthracite underline underline-offset-4 hover:text-ink">Modifier</Link>
-                      <button type="button" disabled={supprimer.isPending} onClick={() => { if (window.confirm(`Supprimer le brouillon « ${n.title} » ?`)) supprimer.mutate(n); }} className="label-13 text-[#8E1A1F] underline underline-offset-4">
-                        Supprimer
-                      </button>
-                    </div>
-                  </li>
-                ))}
+                {brouillons.map((n) => {
+                  const entreprise = (n.scope ?? "entreprise") === "entreprise";
+                  const besoinAutorisation = entreprise && role !== "admin";
+                  return (
+                    <li key={n.id} className="relative flex flex-col gap-3 border border-line bg-white py-4 pr-5 pl-6">
+                      <span aria-hidden className={`absolute inset-y-0 left-0 w-1 ${n.status === "refusée" ? "bg-[#C2272D]" : n.status === "autorisée" ? "bg-[#298646]" : n.status === "en attente" ? "bg-[#B8651B]" : "bg-line"}`} />
+                      <span className="label w-fit border border-line px-2 py-0.5 text-ink">{LIBELLE_PUB[n.status] ?? n.status}</span>
+                      <h3 className="font-body text-[16px] leading-6 font-semibold">{n.title}</h3>
+                      <p className="text-[12px] leading-4 text-ink-2">
+                        {entreprise ? "Toute l'entreprise" : (n.teams ?? []).join(", ")} · Créé le {date(n.created_at)} · Par {n.author}
+                      </p>
+                      {n.status === "en attente" && <p className="text-[14px] leading-5">Demande envoyée{n.requested_at ? ` le ${date(n.requested_at)}` : ""} : un admin doit l'autoriser avant publication.</p>}
+                      {n.status === "autorisée" && <p className="text-[14px] leading-5">Autorisée{n.authorized_by ? ` par ${n.authorized_by}` : ""}{n.authorized_at ? ` le ${date(n.authorized_at)}` : ""} : tu peux la publier.</p>}
+                      {n.status === "refusée" && <p className="text-[14px] leading-5"><span className="font-semibold">Explication de l'admin : </span>{n.refusal_note}</p>}
+                      <div className="flex flex-wrap items-center gap-3">
+                        {n.status === "autorisée" && <HpButton role="principal" icon={Send} disabled={publier.isPending} onClick={() => publier.mutate(n.id)}>PUBLIER</HpButton>}
+                        {n.status === "brouillon" && !besoinAutorisation && <HpButton role="principal" icon={Send} disabled={publier.isPending} onClick={() => publier.mutate(n.id)}>PUBLIER</HpButton>}
+                        {n.status === "brouillon" && besoinAutorisation && <HpButton role="principal" icon={Send} disabled={demander.isPending} onClick={() => demander.mutate(n.id)}>DEMANDER L'AUTORISATION</HpButton>}
+                        {n.status === "refusée" && <HpButton role="principal" icon={Send} disabled={demander.isPending} onClick={() => demander.mutate(n.id)}>REDEMANDER L'AUTORISATION</HpButton>}
+                        {(n.status === "brouillon" || n.status === "refusée") && (
+                          <Link to="/rediger" search={{ id: n.id }} className="label-13 text-anthracite underline underline-offset-4 hover:text-ink">{n.status === "refusée" ? "Corriger" : "Modifier"}</Link>
+                        )}
+                        {n.status === "brouillon" && (
+                          <button type="button" disabled={supprimer.isPending} onClick={() => { if (window.confirm(`Supprimer le brouillon « ${n.title} » ?`)) supprimer.mutate(n); }} className="label-13 text-[#8E1A1F] underline underline-offset-4">
+                            Supprimer
+                          </button>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </Encadre>

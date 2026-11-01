@@ -266,6 +266,10 @@ export type Database = {
       }
       news: {
         Row: {
+          requested_at: string | null
+          authorized_by: string | null
+          authorized_at: string | null
+          refusal_note: string | null
           author: string
           author_email: string | null
           body: string | null
@@ -280,6 +284,10 @@ export type Database = {
           title: string
         }
         Insert: {
+          requested_at?: string | null
+          authorized_by?: string | null
+          authorized_at?: string | null
+          refusal_note?: string | null
           author?: string
           author_email?: string | null
           body?: string | null
@@ -294,6 +302,10 @@ export type Database = {
           title: string
         }
         Update: {
+          requested_at?: string | null
+          authorized_by?: string | null
+          authorized_at?: string | null
+          refusal_note?: string | null
           author?: string
           author_email?: string | null
           body?: string | null
@@ -478,7 +490,7 @@ export type Database = {
       app_role: "admin" | "manager" | "collaborateur"
       blocker_severity: "critical" | "warning" | "info"
       blocker_status: "OUVERT" | "EN COURS" | "SURVEILLANCE" | "RÉSOLU"
-      news_status: "brouillon" | "publiée"
+      news_status: "brouillon" | "publiée" | "en attente" | "autorisée" | "refusée"
       rejection_category:
         | "à clarifier"
         | "en désaccord avec les process"
@@ -615,7 +627,7 @@ export const Constants = {
       app_role: ["admin", "manager", "collaborateur"],
       blocker_severity: ["critical", "warning", "info"],
       blocker_status: ["OUVERT", "EN COURS", "SURVEILLANCE", "RÉSOLU"],
-      news_status: ["brouillon", "publiée"],
+      news_status: ["brouillon", "publiée", "en attente", "autorisée", "refusée"],
       rejection_category: [
         "à clarifier",
         "en désaccord avec les process",
