@@ -240,6 +240,12 @@ export async function remindRequest(id: string) {
   if (error) throw error;
 }
 
+// L'auteur change la nature (bloquante ou non) tant que sa demande est en attente
+export async function setBlocking(id: string, bloquante: boolean) {
+  const { error } = await sb.rpc("set_submission_blocking", { _id: id, _blocking: bloquante });
+  if (error) throw error;
+}
+
 // L'auteur a lu la décision (point « Réponse non lue »)
 export async function markSeen(id: string) {
   await sb.rpc("mark_submission_seen", { _id: id });

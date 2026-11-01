@@ -28,6 +28,7 @@ import {
   stateOf,
   titleOf,
   remindRequest,
+  setBlocking,
   updateFollowUp,
   type Decision,
   type FollowUp,
@@ -102,6 +103,7 @@ function DemandeDetail() {
   const [resp, setResp] = useState("");
   const [cible, setCible] = useState("");
   const [terminee, setTerminee] = useState(false);
+  const [natureOuverte, setNatureOuverte] = useState(false);
 
   useEffect(() => {
     if (!r) return;
@@ -136,6 +138,11 @@ function DemandeDetail() {
       return updateFollowUp(id, { follow_up: s, responsible: resp.trim() || null, target_date: cible || null, done: s === "resolu" ? true : terminee });
     },
     onSuccess: () => { toast.success("Suivi enregistré"); refresh(); },
+    onError,
+  });
+  const changerNature = useMutation({
+    mutationFn: (bloquante: boolean) => setBlocking(id, bloquante),
+    onSuccess: () => { toast.success("Nature enregistrée"); setNatureOuverte(false); refresh(); },
     onError,
   });
   const relancer = useMutation({
@@ -216,8 +223,34 @@ function DemandeDetail() {
           <div className="flex flex-wrap items-center gap-6">
             <StatutBadge state={etat} perspective={perspective} terminee={r.done} />
             <BloquanteMot bloquante={r.blocking} />
+            {mode === "auteur" && etat === "en_attente" && (
+              <button
+                type="button"
+                onClick={() => setNatureOuverte((v) => !v)}
+                aria-expanded={natureOuverte}
+                className="text-[12px] leading-4 underline underline-offset-4"
+              >
+                Modifier
+              </button>
+            )}
             <span className="text-[12px] leading-4 text-ink-2">{refOf(r)}</span>
           </div>
+          {natureOuverte && mode === "auteur" && etat === "en_attente" && (
+            <div role="radiogroup" aria-label="Nature de la demande" className="flex flex-wrap items-center gap-6 border border-line p-4 text-[14px] leading-5">
+              {[{ v: true, l: "Bloquante" }, { v: false, l: "Non bloquante" }].map((o) => (
+                <label key={o.l} className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="nature"
+                    checked={r.blocking === o.v}
+                    disabled={changerNature.isPending}
+                    onChange={() => changerNature.mutate(o.v)}
+                  />
+                  {o.l}
+                </label>
+              ))}
+            </div>
+          )}
           <dl className="grid grid-cols-3 gap-6 border-t border-line pt-5">
             <Info label="Auteur">
               <span className="font-semibold">{auteur}</span>
