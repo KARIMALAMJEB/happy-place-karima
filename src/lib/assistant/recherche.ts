@@ -86,7 +86,21 @@ export function corpus(profil: Profil, actualites: ActualiteLue[] = [], ressourc
 // La question parle-t-elle de Happy Place (l'outil, ses contenus, ses règles) ?
 export const dansLePerimetre = (question: string) => normaliser(question).split(" ").some((m) => DOMAINE.some((r) => m.startsWith(r)));
 
-const contient = (mots: string[], t: string) => mots.some((m) => m.startsWith(t));
+// Synonymes d'usage (racines) : « créer une demande » doit retrouver « déposer une demande »
+const SYNONYMES: Record<string, string[]> = {
+  cree: ["depos", "redig", "publi"],
+  creat: ["depos", "redig", "publi"],
+  ajou: ["depos"],
+  soumet: ["depos"],
+  post: ["depos", "publi"],
+  formu: ["depos"],
+  envo: ["depos"],
+  nouv: ["depos"],
+  ecri: ["redig"],
+  rempl: ["depos"],
+};
+const contientBrut = (mots: string[], t: string) => mots.some((m) => m.startsWith(t));
+const contient = (mots: string[], t: string) => contientBrut(mots, t) || (SYNONYMES[t] ?? []).some((a) => contientBrut(mots, a));
 
 // Seuil : tous les mots précis de la question doivent être présents ; un mot courant (« demande ») peut manquer,
 // mais une question faite seulement de mots courants doit en retrouver au moins un
@@ -102,14 +116,15 @@ const pertinent = (q: string[], trouves: string[]) => {
 const scoreDe = (trouves: string[], titre: string[], guide: boolean) =>
   trouves.length * 100 + (guide ? 50 : 0) + trouves.filter((t) => contient(titre, t)).length * 10;
 
-export function rechercher(question: string, docs: Doc[]): Extrait[] {
+// large = vrai : un seul mot en commun suffit (le modèle d'IA juge ensuite le sens de la question)
+export function rechercher(question: string, docs: Doc[], large = false, limite = 3): Extrait[] {
   const q = termes(question);
   if (q.length === 0) return [];
   return docs
     .map((d) => {
       const tous = [d.titreNorm, d.chapeau, ...d.motsPhrases].flat();
       const trouves = q.filter((t) => contient(tous, t));
-      if (!pertinent(q, trouves)) return undefined;
+      if (large ? trouves.length === 0 : !pertinent(q, trouves)) return undefined;
       const score = scoreDe(trouves, d.titreNorm, d.type === "Guide");
       // 3 phrases les plus proches de la question, dans l'ordre du texte
       const notes = d.motsPhrases.map((m, i) => ({ i, n: q.filter((t) => contient(m, t)).length }));
@@ -124,5 +139,5 @@ export function rechercher(question: string, docs: Doc[]): Extrait[] {
     })
     .filter((e): e is Extrait => !!e)
     .sort((a, b) => b.score - a.score)
-    .slice(0, 3);
+    .slice(0, limite);
 }

@@ -28,16 +28,16 @@ export const GUIDE: ArticleGuide[] = [
     profils: "tous",
     page: "",
     texte:
-      "Happy Place distingue trois profils. Le collaborateur dépose ses demandes, suit les réponses, relance la personne qui décide et lit les actualités, les indicateurs, la Boîte à outils et l'Annuaire ; il ne publie pas d'actualité. Le manager fait tout cela et, en plus, décide des demandes qui lui sont adressées, suit les demandes de son équipe et rédige des actualités pour son équipe ou plusieurs équipes ; pour toute l'entreprise, il demande l'autorisation d'un admin. L'admin supervise toutes les demandes, envoie un rappel groupé aux managers, autorise ou refuse les annonces entreprise, publie directement pour toute l'entreprise, modifie la Boîte à outils et saisit les indicateurs.",
+      "Happy Place distingue trois profils. Le collaborateur dépose ses demandes, suit les réponses, relance la personne qui décide et lit les actualités, les indicateurs, la Boîte à outils et l'Annuaire ; il ne publie pas d'actualité. Le manager fait tout cela et, en plus, décide des demandes qui lui sont adressées, suit les demandes de son équipe et rédige des actualités pour son équipe ou plusieurs équipes ; pour toute l'entreprise, il demande l'autorisation d'un admin. L'admin supervise toutes les demandes, autorise ou refuse les annonces entreprise, publie directement pour toute l'entreprise, modifie la Boîte à outils et saisit les indicateurs.",
   },
   {
     id: "g-deposer",
     titre: "Déposer une demande : les champs",
-    motsCles: ["déposer", "demande", "formulaire", "champs", "bloquante", "thème", "pièce jointe", "pdf", "brouillon"],
+    motsCles: ["déposer", "créer", "ajouter", "soumettre", "nouvelle demande", "demande", "formulaire", "champs", "bloquante", "thème", "pièce jointe", "pdf", "brouillon"],
     profils: "tous",
     page: "deposer",
     texte:
-      "Pour déposer une demande, ouvre « Déposer une demande » depuis l'accueil ou la page Demandes. Le titre (120 caractères au plus) et la description (1 000 caractères au plus, avec mise en forme) sont obligatoires. La nature est obligatoire. BLOQUANTE : tu ne peux pas poursuivre ton travail tant que la demande n'est pas traitée, par exemple pour un accès à un outil indispensable. NON BLOQUANTE : tu peux continuer à travailler en attendant, par exemple pour un équipement de confort ou une amélioration. Le thème est facultatif : Conditions de travail, Cantine, CE, Informatique ou Autre. Choisis ensuite la visibilité et la personne qui valide, deux choix obligatoires. Tu peux joindre des documents : PDF uniquement, 20 Mo au plus par document, 4 fichiers au plus. Le bouton « Enregistrer le brouillon » garde ta saisie pour plus tard. Tant que la demande est en attente, tu peux encore la modifier, sauf la visibilité et la personne qui valide.",
+      "Pour déposer une demande, ouvre « Déposer une demande » depuis l'accueil ou la page Demandes. Le titre (120 caractères au plus) et la description (1 000 caractères au plus, avec mise en forme) sont obligatoires. La nature est obligatoire. BLOQUANTE : tu ne peux pas poursuivre ton travail tant que la demande n'est pas traitée, par exemple pour un accès à un outil indispensable. NON BLOQUANTE : tu peux continuer à travailler en attendant, par exemple pour un équipement de confort ou une amélioration. Le thème est facultatif : Conditions de travail, Cantine, CE, Informatique ou Autre. Choisis ensuite la visibilité et la personne qui valide, deux choix obligatoires. Tu peux joindre des documents : PDF uniquement, 20 Mo au plus par document, 3 fichiers au plus. Le bouton « Enregistrer le brouillon » garde ta saisie pour plus tard. Tant que la demande est en attente, tu peux encore la modifier, sauf la visibilité et la personne qui valide.",
   },
   {
     id: "g-visibilite",
