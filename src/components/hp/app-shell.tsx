@@ -2,6 +2,7 @@ import { Link, useRouteContext, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ClipboardList, Contact, Database, LayoutDashboard, LogOut, Menu, Newspaper, Repeat, Search, TrendingUp, Wrench, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
+import { Assistant } from "@/components/hp/assistant";
 import { HpButton, HpIconButton } from "@/components/hp/button";
 import { signOut, type AppRole } from "@/lib/auth";
 import { fetchMyRequests, fetchToReview, nonLue, stateOf } from "@/lib/requests";
@@ -220,6 +221,7 @@ export function AppShell({ name, role, equipe, children }: { name: string; role:
         </main>
         <Footer />
       </div>
+      <Assistant />
     </div>
   );
 }
