@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { HpButton } from "@/components/hp/button";
 import { Encadre } from "@/components/hp/encadre";
 import { HpPage, useOwnProfile } from "@/components/hp/page";
+import { ReglesArbitrage } from "@/components/hp/regles";
 import { supabase } from "@/integrations/supabase/client";
 import { MAX_PDF_BYTES, THEMES, VISIBILITY_LABEL, createRequest, type Theme, type Visibility } from "@/lib/requests";
 import { cn } from "@/lib/utils";
@@ -137,6 +138,7 @@ function DeposerPage() {
         </h1>
       </section>
 
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
       <form onSubmit={valider} noValidate className="flex flex-col gap-6">
         <Encadre title="Ta demande">
           <div className="flex flex-col gap-5 p-6">
@@ -288,6 +290,8 @@ function DeposerPage() {
           <Building2 size={14} aria-hidden /> <Users size={14} aria-hidden /> Tu seras prévenu(e) par e-mail dès que ta demande reçoit une réponse.
         </p>
       </form>
+      <ReglesArbitrage />
+      </div>
     </HpPage>
   );
 }
