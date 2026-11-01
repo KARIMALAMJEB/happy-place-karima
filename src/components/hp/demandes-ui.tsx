@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { BloquanteMot, StatutBadge } from "@/components/hp/statut";
+import { BloquanteMot, StatutBadge, TraitStatut, tonOf } from "@/components/hp/statut";
 import { VISIBILITY_LABEL, nonLue, refOf, remindRequest, stateOf, titleOf, type RequestRow } from "@/lib/requests";
 import { cn } from "@/lib/utils";
 
@@ -63,6 +63,7 @@ function Ligne({ r, perspective }: { r: RequestRow; perspective: Perspective }) 
   const nl = perspective === "auteur" && nonLue(r);
   return (
     <div role="row" className={cn(GRILLE, "relative min-h-16 items-center border-t border-line bg-white py-2 pr-4 pl-6")}>
+      <TraitStatut ton={tonOf(etat, r.done && etat === "validee")} />
       <span role="cell" className="flex min-w-0 flex-col gap-0.5">
         <Link
           to="/demande/$id"
@@ -84,8 +85,8 @@ function Ligne({ r, perspective }: { r: RequestRow; perspective: Perspective }) 
       <span role="cell" className="text-[12px] leading-4 text-ink-2">{VISIBILITY_LABEL[r.visibility]}</span>
       <span role="cell" className="text-[12px] leading-4 text-ink-2">{date(r.created_at)}</span>
       <span role="cell" className="flex flex-col items-start gap-1">
-        <StatutBadge state={etat} />
-        {r.blocking && <BloquanteMot bloquante />}
+        <StatutBadge state={etat} perspective={perspective === "valideur" ? "valideur" : "auteur"} terminee={r.done && etat === "validee"} />
+        {r.blocking && <BloquanteMot />}
         {perspective === "valideur" && r.reminded_at && etat === "en_attente" && <Info>Relancée le {date(r.reminded_at)}</Info>}
         {perspective === "valideur" && attente >= DELAI_RELANCE && <Info>À traiter : depuis {jo(attente)}</Info>}
       </span>

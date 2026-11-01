@@ -159,7 +159,7 @@ function Accueil() {
                 const critique = b.severity === "critical";
                 return (
                   <li key={b.id} className="relative flex flex-wrap items-start justify-between gap-3 border-t border-line py-4 pr-6 pl-6">
-                    <span aria-hidden className={cn("absolute inset-y-0 left-0 w-1", critique ? "bg-[#C2272D]" : "bg-[#B7791F]")} />
+                    <span aria-hidden className={cn("absolute inset-y-0 left-0 w-1", critique ? "bg-[#C2272D]" : "bg-[#B8651B]")} />
                     <div className="flex min-w-0 flex-col gap-1">
                       <p className="text-[16px] leading-6 font-semibold">{b.title}</p>
                       {b.description && <p className="text-[14px] leading-5 text-ink-2">{b.description}</p>}

@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 
 export type Onglet = "mes" | "validees" | "traiter" | "decidees" | "toutes";
 export type Tuile = { id: string; label: string; ton: "ambre" | "vert" | "rouge"; onglet: Onglet; n: number; garde: (r: RequestRow) => boolean };
-const TRAIT = { ambre: "bg-[#B7791F]", vert: "bg-[#298646]", rouge: "bg-[#C2272D]" } as const;
+const TRAIT = { ambre: "bg-[#B8651B]", vert: "bg-[#298646]", rouge: "bg-[#C2272D]" } as const;
 
 // Un chiffre = une liste : chaque tuile filtre la liste qu'elle compte (même définition à l'accueil et sur Demandes)
 export function buildTuiles(role: AppRole, mesL: RequestRow[], aTraiterL: RequestRow[]): Tuile[] {

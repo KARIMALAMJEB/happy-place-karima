@@ -110,6 +110,8 @@ export async function removeNewsImageFile(path: string | null | undefined) {
 }
 
 export async function signedNewsImageUrl(path: string): Promise<string> {
+  // Photos d'illustration livrées avec l'application (public/actualites/...) : pas de lien signé
+  if (path.startsWith("/")) return path;
   const { data, error } = await supabase.storage.from(NEWS_MEDIA_BUCKET).createSignedUrl(path, 3600);
   if (error || !data?.signedUrl) throw error ?? new Error("Image indisponible");
   return data.signedUrl;
