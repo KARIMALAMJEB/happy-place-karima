@@ -272,6 +272,8 @@ export type Database = {
           created_at: string
           id: string
           image_path: string | null
+          scope: string
+          teams: string[]
           links: Json
           revalidate_at: string | null
           status: Database["public"]["Enums"]["news_status"]
@@ -284,6 +286,8 @@ export type Database = {
           created_at?: string
           id?: string
           image_path?: string | null
+          scope?: string
+          teams?: string[]
           links?: Json
           revalidate_at?: string | null
           status?: Database["public"]["Enums"]["news_status"]
@@ -296,6 +300,8 @@ export type Database = {
           created_at?: string
           id?: string
           image_path?: string | null
+          scope?: string
+          teams?: string[]
           links?: Json
           revalidate_at?: string | null
           status?: Database["public"]["Enums"]["news_status"]

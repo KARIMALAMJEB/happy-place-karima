@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Clock, Image as ImageIcon, Info, Search, SlidersHorizontal, X } from "lucide-react";
 import { useState } from "react";
 import { HpPage } from "@/components/hp/page";
+import { TabButton, TabList } from "@/components/hp/tabs";
 import { hpButtonVariants } from "@/components/hp/button";
 import { NewsImage } from "@/components/news-media";
 import { NewsReader } from "@/components/news-reader";
@@ -14,6 +15,7 @@ export const Route = createFileRoute("/_authenticated/actualites")({
   component: Actualites,
 });
 
+type Onglet = "toutes" | "equipe" | "entreprise";
 type Filtres = { auteur?: string; date?: "7" | "30" };
 type Cle = keyof Filtres;
 
@@ -46,7 +48,7 @@ function Carte({ n, onLire }: { n: News; onLire: (n: News) => void }) {
         </div>
       )}
       <div className="flex flex-1 flex-col gap-3 p-6">
-        <span className="label w-fit border border-line px-2 py-1 text-ink">ENTREPRISE</span>
+        <span className="label w-fit border border-line px-2 py-1 text-ink">{n.scope === "equipes" ? "MON ÉQUIPE" : "ENTREPRISE"}</span>
         <h2 className="text-[20px] leading-7">
           <button type="button" onClick={() => onLire(n)} className="block cursor-pointer py-0.5 text-left after:absolute after:inset-0">
             {n.title}
@@ -73,13 +75,17 @@ function Carte({ n, onLire }: { n: News; onLire: (n: News) => void }) {
 function Fil() {
   const { role } = useRouteContext({ from: "/_authenticated" });
   const news = useQuery({ queryKey: ["news"], queryFn: fetchNews, retry: false });
+  const [onglet, setOnglet] = useState<Onglet>("toutes");
   const [recherche, setRecherche] = useState("");
   const [panneau, setPanneau] = useState(false);
   const [filtres, setFiltres] = useState<Filtres>({});
   const [lecteur, setLecteur] = useState<News | null>(null);
   const redacteur = role !== "collaborateur";
 
-  const base = [...(news.data ?? [])].filter((n) => n.status === "publiée").sort((a, b) => b.created_at.localeCompare(a.created_at));
+  const publiees = [...(news.data ?? [])].filter((n) => n.status === "publiée").sort((a, b) => b.created_at.localeCompare(a.created_at));
+  const equipe = publiees.filter((n) => n.scope === "equipes");
+  const entreprise = publiees.filter((n) => n.scope !== "equipes");
+  const base = onglet === "equipe" ? equipe : onglet === "entreprise" ? entreprise : publiees;
   const q = sansAccents(recherche.trim());
   const liste = base.filter(
     (n) =>
@@ -111,7 +117,11 @@ function Fil() {
 
       <section className="flex flex-col gap-4 border border-line bg-white p-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <h2 className="label text-ink">TOUTES ({base.length})</h2>
+          <TabList label="Actualités">
+            <TabButton active={onglet === "toutes"} onClick={() => setOnglet("toutes")}>{`TOUTES (${publiees.length})`}</TabButton>
+            <TabButton active={onglet === "equipe"} onClick={() => setOnglet("equipe")}>{`MON ÉQUIPE (${equipe.length})`}</TabButton>
+            <TabButton active={onglet === "entreprise"} onClick={() => setOnglet("entreprise")}>{`ENTREPRISE (${entreprise.length})`}</TabButton>
+          </TabList>
           <div className="flex items-center gap-3">
             <label className="relative flex items-center">
               <span className="sr-only">Rechercher une actualité</span>

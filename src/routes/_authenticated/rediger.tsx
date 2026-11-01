@@ -7,6 +7,7 @@ import { HpButton } from "@/components/hp/button";
 import { Encadre } from "@/components/hp/encadre";
 import { HpPage, useOwnProfile } from "@/components/hp/page";
 import { NewsMediaEditor } from "@/components/news-media";
+import { supabase } from "@/integrations/supabase/client";
 import { fetchNews, saveDraftNews } from "@/lib/dashboard";
 import { emptyMedia, linkErrors, mediaFromNews, toNewsLinks, type MediaDraft } from "@/lib/news-media";
 
@@ -33,6 +34,16 @@ function Rediger() {
   const [media, setMedia] = useState<MediaDraft>(emptyMedia);
   const [erreurLiens, setErreurLiens] = useState(false);
   const [erreur, setErreur] = useState("");
+  const [scope, setScope] = useState<"entreprise" | "equipes">("entreprise");
+  const [equipes, setEquipes] = useState<string[]>([]);
+  const toutesEquipes = useQuery({
+    queryKey: ["teams"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("teams").select("name").order("name");
+      if (error) throw error;
+      return (data ?? []).map((t) => t.name as string);
+    },
+  });
 
   // Reprise d'un brouillon existant
   useEffect(() => {
@@ -42,6 +53,8 @@ function Rediger() {
     setTitre(n.title);
     setCorps(n.body ?? "");
     setMedia(mediaFromNews(n));
+    setScope(n.scope ?? "entreprise");
+    setEquipes(n.teams ?? []);
   }, [id, news.data]);
 
   const enregistrer = useMutation({
@@ -57,6 +70,7 @@ function Rediger() {
   function envoyer(e: React.FormEvent) {
     e.preventDefault();
     if (titre.trim().length < 3) return setErreur("Le titre doit faire au moins 3 caractères.");
+    if (scope === "equipes" && equipes.length === 0) return setErreur("Choisis au moins une équipe, ou « Toute l'entreprise ».");
     setErreur("");
     setErreurLiens(true);
     if (Object.keys(linkErrors(media.links)).length) return setErreur("Corrige les liens invalides avant d'enregistrer.");
@@ -68,6 +82,8 @@ function Rediger() {
       author_email: email,
       links: toNewsLinks(media.links),
       media,
+      scope,
+      teams: equipes,
     });
   }
 
@@ -92,6 +108,38 @@ function Rediger() {
               <label htmlFor="corps" className="label text-ink">Contenu</label>
               <textarea id="corps" className={`${champ} min-h-40 py-2`} value={corps} onChange={(e) => setCorps(e.target.value)} />
             </div>
+            <fieldset className="flex flex-col gap-3">
+              <legend className="label mb-2 text-ink">Pour qui ?</legend>
+              <div role="radiogroup" className="grid gap-3 sm:grid-cols-2">
+                {([
+                  ["entreprise", "Toute l'entreprise", "Visible par tous les salariés."],
+                  ["equipes", "Mon équipe ou mes équipes", "Visible par les équipes choisies."],
+                ] as const).map(([v, l, aide]) => (
+                  <label key={v} className={`flex min-h-11 cursor-pointer items-start gap-3 border px-4 py-3 hover:bg-neutral-1 ${scope === v ? "border-anthracite bg-neutral-1" : "border-line"}`}>
+                    <input type="radio" name="scope" checked={scope === v} onChange={() => setScope(v)} className="mt-0.5 size-5 shrink-0 accent-anthracite" />
+                    <span className="flex flex-col gap-1">
+                      <span className="text-[14px] leading-5 font-semibold">{l}</span>
+                      <span className="text-[12px] leading-4 text-ink-2">{aide}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+              {scope === "equipes" && (
+                <div className="flex flex-wrap gap-3" role="group" aria-label="Équipes concernées">
+                  {(toutesEquipes.data ?? []).map((t) => (
+                    <label key={t} className={`flex min-h-11 cursor-pointer items-center gap-2 border px-3 text-[14px] ${equipes.includes(t) ? "border-anthracite bg-neutral-1" : "border-line"}`}>
+                      <input
+                        type="checkbox"
+                        checked={equipes.includes(t)}
+                        onChange={(e) => setEquipes((l) => (e.target.checked ? [...l, t] : l.filter((x) => x !== t)))}
+                        className="size-5 accent-anthracite"
+                      />
+                      {t}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </fieldset>
             <NewsMediaEditor
               value={media}
               onChange={setMedia}

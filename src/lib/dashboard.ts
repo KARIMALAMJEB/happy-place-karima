@@ -18,6 +18,8 @@ export type News = {
   created_at: string;
   image_path?: string | null;
   links?: unknown;
+  scope?: "entreprise" | "equipes";
+  teams?: string[];
 };
 
 export type Submission = {
@@ -103,8 +105,12 @@ export async function saveDraftNews(input: {
   author_email: string;
   links: NewsLink[];
   media: MediaDraft;
+  scope: "entreprise" | "equipes";
+  teams: string[];
 }) {
   const payload = {
+    scope: input.scope,
+    teams: input.scope === "equipes" ? input.teams : [],
     title: input.title,
     body: input.body,
     author: input.author,
