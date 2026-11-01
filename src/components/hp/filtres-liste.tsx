@@ -14,11 +14,11 @@ export const equipesDe = (valeurs: (string | null | undefined)[]) => [...new Set
 
 const select = "min-h-11 border border-field bg-white px-3 text-[14px] leading-5 text-ink";
 
-export function BarreFiltres({ recherche, onRecherche, placeholder, equipe, onEquipe, equipes, periode, onPeriode, onReinitialiser, actifs, children }: {
+export function BarreFiltres({ recherche, onRecherche, placeholder, equipe, onEquipe, equipes, periode, onPeriode, onReinitialiser, actifs, sansDate, children }: {
   recherche: string; onRecherche: (v: string) => void; placeholder: string;
   equipe: string; onEquipe: (v: string) => void; equipes: string[];
   periode: Periode; onPeriode: (v: Periode) => void;
-  onReinitialiser: () => void; actifs: boolean; children?: ReactNode;
+  onReinitialiser: () => void; actifs: boolean; sansDate?: boolean; children?: ReactNode;
 }) {
   return (
     <div role="search" className="flex flex-wrap items-center gap-3">
@@ -37,12 +37,12 @@ export function BarreFiltres({ recherche, onRecherche, placeholder, equipe, onEq
         <option value="">Toutes les équipes</option>
         {equipes.map((t) => <option key={t} value={t}>{t}</option>)}
       </select>
-      <select aria-label="Filtrer par date" value={periode} onChange={(e) => onPeriode(e.target.value as Periode)} className={select}>
+      {!sansDate && <select aria-label="Filtrer par date" value={periode} onChange={(e) => onPeriode(e.target.value as Periode)} className={select}>
         <option value="">Toutes les dates</option>
         <option value="7">7 derniers jours</option>
         <option value="30">30 derniers jours</option>
         <option value="90">90 derniers jours</option>
-      </select>
+      </select>}
       {children}
       {actifs && (
         <button type="button" onClick={onReinitialiser} className="inline-flex h-11 cursor-pointer items-center gap-1.5 px-1 text-[14px] leading-5 font-semibold text-anthracite underline underline-offset-4 hover:text-ink">

@@ -5,6 +5,7 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { BulkImport } from "@/components/manage/bulk-import";
+import { BarreFiltres, correspond, equipesDe } from "@/components/hp/filtres-liste";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { countAttachmentDeletionQueue, processAttachmentDeletionQueue } from "@/lib/dashboard";
 
@@ -80,7 +81,11 @@ function UsersPage() {
     },
   });
   const selectableTeams = (teamsQuery.data ?? []).filter((t) => !t.is_reserved && t.name.toLowerCase() !== "admin").map((t) => t.name);
-  const [roleDialog, setRoleDialog] = useState<{ id: string; email: string; team: string } | null>(null);
+  const [roleDialog, setRoleDialog] = useState<{ id: string; email: string; team: string; role: "collaborateur" | "manager" } | null>(null);
+  const [nameInputs, setNameInputs] = useState<Record<string, { first: string; last: string }>>({});
+  const [fQ, setFQ] = useState("");
+  const [fEquipe, setFEquipe] = useState("");
+  const [fRole, setFRole] = useState("");
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["allowed_users"] });
     qc.invalidateQueries({ queryKey: ["teams"] });
@@ -102,15 +107,20 @@ function UsersPage() {
         await supabase.from("allowed_users").delete().eq("id", data.id);
         throw roleError;
       }
+      // Un manager encadre au moins son équipe de rattachement
+      if (v.role === "manager" && v.team) {
+        const { error: mtError } = await supabase.from("manager_teams").insert({ allowed_user_id: data.id, team: v.team });
+        if (mtError && mtError.code !== "23505") throw mtError;
+      }
     },
     onSuccess: () => { setEmail(""); setNewTeam(""); setFirstName(""); setLastName(""); toast.success("Utilisateur ajouté"); refresh(); },
     onError,
   });
   const update = useMutation({
     mutationFn: async (v: { id: string; role: AppRole; team?: string }) => {
-      if (v.role === "collaborateur") {
+      if (v.role === "collaborateur" || v.role === "manager") {
         const parsed = teamSchema.safeParse(v.team ?? "");
-        if (!parsed.success) throw new Error("Équipe requise pour un collaborateur : " + parsed.error.issues[0].message);
+        if (!parsed.success) throw new Error(`Équipe requise pour un ${v.role === "manager" ? "manager" : "collaborateur"} : ` + parsed.error.issues[0].message);
         const { data, error: tErr } = await supabase.from("allowed_users").update({ team: parsed.data }).eq("id", v.id).select("id");
         if (tErr) throw tErr;
         if (!data?.length) throw new Error("Modification refusée : vérifie que tu es admin");
@@ -129,9 +139,30 @@ function UsersPage() {
       if (v.role !== "manager") {
         const { error: teamError } = await supabase.from("manager_teams").delete().eq("allowed_user_id", v.id);
         if (teamError) throw teamError;
+      } else if (v.team) {
+        // Le manager encadre au moins son équipe de rattachement
+        const { error: mtError } = await supabase.from("manager_teams").insert({ allowed_user_id: v.id, team: v.team });
+        if (mtError && mtError.code !== "23505") throw mtError;
       }
     },
     onSuccess: refresh,
+    onError,
+  });
+  const updateName = useMutation({
+    mutationFn: async (v: { id: string; first: string; last: string }) => {
+      const fn = nameSchema.safeParse(v.first);
+      if (!fn.success) throw new Error("Prénom : " + fn.error.issues[0].message);
+      const ln = nameSchema.safeParse(v.last);
+      if (!ln.success) throw new Error("Nom : " + ln.error.issues[0].message);
+      const { data, error } = await supabase.from("allowed_users").update({ first_name: fn.data || null, last_name: ln.data || null }).eq("id", v.id).select("id");
+      if (error) throw error;
+      if (!data?.length) throw new Error("Modification refusée : vérifie que tu es admin");
+    },
+    onSuccess: (_, v) => {
+      toast.success("Nom modifié");
+      setNameInputs((c) => { const n = { ...c }; delete n[v.id]; return n; });
+      refresh();
+    },
     onError,
   });
   const setDeparture = useMutation({
@@ -224,7 +255,7 @@ function UsersPage() {
     const parsed = emailSchema.safeParse(email);
     if (!parsed.success) return setErr(parsed.error.issues[0].message);
     let team: string | null = null;
-    if (role === "collaborateur") {
+    if (role === "collaborateur" || role === "manager") {
       const t = teamSchema.safeParse(newTeam);
       if (!t.success) return setErr("Équipe requise : " + t.error.issues[0].message);
       team = t.data;
@@ -236,6 +267,13 @@ function UsersPage() {
     setErr(null);
     add.mutate({ email: parsed.data, role, team, first_name: fn.data || null, last_name: ln.data || null });
   }
+
+  const visibles = (list.data ?? []).filter(
+    (u) =>
+      correspond(fQ, u.first_name, u.last_name, u.email) &&
+      (!fEquipe || u.team === fEquipe || u.teams.includes(fEquipe)) &&
+      (!fRole || u.role === fRole),
+  );
 
   return (
     <div className="space-y-6">
@@ -291,14 +329,14 @@ function UsersPage() {
           <option value="manager">Manager</option>
           <option value="admin">Admin</option>
         </select>
-        {role === "collaborateur" && (
+        {(role === "collaborateur" || role === "manager") && (
 <select
             value={newTeam}
             onChange={(e) => setNewTeam(e.target.value)}
-            aria-label="Équipe du collaborateur"
+            aria-label={role === "manager" ? "Équipe de rattachement du manager" : "Équipe du collaborateur"}
             className="border border-line bg-white px-4 py-2 text-[14px] leading-5"
           >
-            <option value="">Choisir une équipe</option>
+            <option value="">{role === "manager" ? "Équipe de rattachement" : "Choisir une équipe"}</option>
             {selectableTeams.map((t) => <option key={t} value={t}>{t}</option>)}
           </select>
         )}
@@ -307,8 +345,32 @@ function UsersPage() {
         </button>
       </form>
 
+      <div className="border border-line bg-white p-6">
+        <BarreFiltres
+          sansDate
+          recherche={fQ}
+          onRecherche={setFQ}
+          placeholder="Rechercher un nom ou un e-mail"
+          equipe={fEquipe}
+          onEquipe={setFEquipe}
+          equipes={equipesDe((list.data ?? []).flatMap((u) => [u.team, ...u.teams]))}
+          periode=""
+          onPeriode={() => {}}
+          actifs={!!(fQ || fEquipe || fRole)}
+          onReinitialiser={() => { setFQ(""); setFEquipe(""); setFRole(""); }}
+        >
+          <select aria-label="Filtrer par rôle" value={fRole} onChange={(e) => setFRole(e.target.value)} className="min-h-11 border border-field bg-white px-3 text-[14px] leading-5 text-ink">
+            <option value="">Tous les rôles</option>
+            <option value="collaborateur">Collaborateur</option>
+            <option value="manager">Manager</option>
+            <option value="admin">Admin</option>
+          </select>
+        </BarreFiltres>
+        <p role="status" className="pt-2 text-[12px] leading-4 text-ink-2">{visibles.length} sur {(list.data ?? []).length} utilisateur{(list.data ?? []).length > 1 ? "s" : ""}</p>
+      </div>
+
       <div className="border border-line divide-y divide-line bg-white">
-        {list.data?.map((u) => (
+        {visibles.map((u) => (
           <div key={u.id} className="space-y-4 p-4">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <span className="text-[14px] leading-5 text-ink">
@@ -325,8 +387,8 @@ function UsersPage() {
                 value={u.role}
                 onChange={(e) => {
                   const next = e.target.value as AppRole;
-                  if (next === "collaborateur") {
-                    setRoleDialog({ id: u.id, email: u.email, team: u.team ?? "" });
+                  if (next === "collaborateur" || next === "manager") {
+                    setRoleDialog({ id: u.id, email: u.email, team: u.team ?? u.teams[0] ?? "", role: next });
                   } else update.mutate({ id: u.id, role: next }, { onSuccess: () => toast.success("Rôle modifié") });
                 }}
                 aria-label={`Rôle de ${u.email}`}
@@ -345,6 +407,33 @@ function UsersPage() {
                 RETIRER (J+7)
               </button>
               </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 border-t border-line pt-4">
+              <span className="label text-ink-2">NOM :</span>
+              <input
+                aria-label={`Prénom de ${u.email}`}
+                placeholder="Prénom"
+                maxLength={100}
+                value={nameInputs[u.id]?.first ?? u.first_name ?? ""}
+                onChange={(e) => setNameInputs((c) => ({ ...c, [u.id]: { first: e.target.value, last: c[u.id]?.last ?? u.last_name ?? "" } }))}
+                className="border border-line bg-white px-4 py-1 text-[14px] leading-5"
+              />
+              <input
+                aria-label={`Nom de ${u.email}`}
+                placeholder="Nom"
+                maxLength={100}
+                value={nameInputs[u.id]?.last ?? u.last_name ?? ""}
+                onChange={(e) => setNameInputs((c) => ({ ...c, [u.id]: { first: c[u.id]?.first ?? u.first_name ?? "", last: e.target.value } }))}
+                className="border border-line bg-white px-4 py-1 text-[14px] leading-5"
+              />
+              <button
+                type="button"
+                disabled={!nameInputs[u.id] || updateName.isPending}
+                onClick={() => nameInputs[u.id] && updateName.mutate({ id: u.id, first: nameInputs[u.id].first, last: nameInputs[u.id].last })}
+                className="bg-anthracite text-on-anthracite px-4 py-1 label disabled:opacity-50"
+              >
+                ENREGISTRER
+              </button>
             </div>
             <div className="flex flex-wrap items-center gap-2 border-t border-line pt-4">
               <label className="label  text-ink-2" htmlFor={`dep-${u.id}`}>
@@ -380,9 +469,9 @@ function UsersPage() {
                 </button>
               )}
             </div>
-            {u.role === "collaborateur" && (
+            {(u.role === "collaborateur" || u.role === "manager") && (
               <div className="flex flex-wrap items-center gap-2 border-t border-line pt-4">
-                <span className="label  text-ink-2">ÉQUIPE :</span>
+                <span className="label  text-ink-2">{u.role === "manager" ? "ÉQUIPE DE RATTACHEMENT :" : "ÉQUIPE :"}</span>
 <select
             value={memberTeams[u.id] ?? u.team ?? ""}
             onChange={(e) => setMemberTeams((c) => ({ ...c, [u.id]: e.target.value }))}
@@ -401,7 +490,7 @@ function UsersPage() {
                       disabled={!chosen || chosen === u.team || saving}
                       onClick={() =>
                         update.mutate(
-                          { id: u.id, role: "collaborateur", team: chosen },
+                          { id: u.id, role: u.role, team: chosen },
                           {
                             onSuccess: () => {
                               toast.success("Équipe modifiée");
@@ -459,7 +548,7 @@ function UsersPage() {
       <Dialog open={!!roleDialog} onOpenChange={(o) => !o && setRoleDialog(null)}>
         <DialogContent className="hp-shell rounded-none border border-anthracite bg-white p-6 text-ink">
           <DialogHeader>
-            <DialogTitle>Équipe de {roleDialog?.email}</DialogTitle>
+            <DialogTitle>{roleDialog?.role === "manager" ? "Équipe de rattachement du manager" : "Équipe du collaborateur"} : {roleDialog?.email}</DialogTitle>
           </DialogHeader>
           <select
             value={roleDialog?.team ?? ""}
@@ -479,7 +568,7 @@ function UsersPage() {
               onClick={() => {
                 if (!roleDialog?.team) return;
                 update.mutate(
-                  { id: roleDialog.id, role: "collaborateur", team: roleDialog.team },
+                  { id: roleDialog.id, role: roleDialog.role, team: roleDialog.team },
                   { onSuccess: () => { toast.success("Rôle modifié"); setRoleDialog(null); } },
                 );
               }}
