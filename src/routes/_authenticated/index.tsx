@@ -1,12 +1,13 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { signOut } from "@/lib/auth";
+import { createFileRoute } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ErrorSummary, Field, FormActions, Modal, TextArea, TextInput } from "@/components/manage/crud-ui";
 import { rejectionSchema, submissionSchema, validate, type FieldErrors } from "@/lib/manage-schemas";
-import { BrandHeader } from "@/components/brand-header";
+import { AppShell } from "@/components/hp/app-shell";
+import { HpButton } from "@/components/hp/button";
+import { Download, Plus } from "lucide-react";
 import { AttachmentLink } from "@/components/attachment-link";
 import { CharCounter, SubmissionPreview, rejectionErrorMessage } from "@/components/expandable-card";
 import { Linkify } from "@/components/linkify";
@@ -108,6 +109,25 @@ function ManagerSpace() {
     (typeof meta.full_name === "string" && meta.full_name) ||
     (typeof meta.name === "string" && meta.name) ||
     myEmail;
+  const ownProfile = useQuery({
+    queryKey: ["own_profile", myEmail],
+    enabled: !!myEmail,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("allowed_users")
+        .select("first_name, last_name")
+        .eq("email", myEmail)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+  const firstName = ownProfile.data?.first_name?.trim() || myName.split(/[\s@]/)[0] || "";
+  const displayName =
+    [ownProfile.data?.first_name, ownProfile.data?.last_name].filter(Boolean).join(" ").trim() || myName;
+  const today = new Intl.DateTimeFormat("fr-FR", {
+    weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Paris",
+  }).format(new Date());
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [editingNewsId, setEditingNewsId] = useState<string | null>(null);
@@ -274,54 +294,37 @@ function ManagerSpace() {
   }
 
   return (
-    <div className="bg-background text-on-surface font-body-md min-h-screen flex flex-col">
-      <BrandHeader />
-      <main className="flex-grow w-full max-w-interface mx-auto p-sm md:p-md space-y-md">
+    <AppShell name={displayName} role={role}>
+      <div className="flex flex-col gap-6 font-body text-ink">
         {email && <DepartureNotices email={email} />}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-sm mb-lg">
-          <div className="space-y-sm">
-            <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">
-              Vue d'ensemble
-            </p>
-            <h1 className="font-headline-lg text-headline-lg text-primary">Happy Place</h1>
-            <button
-              onClick={() => {
-                setSubmissionErrors({});
-                const only = role === "manager" && myTeams.data?.length === 1 ? myTeams.data[0] : "";
-                setSubmissionForm({ author_name: "", team: only, content: "", status: "en attente" });
-              }}
-              className="flex items-center gap-xs px-md py-xs bg-primary text-on-primary font-label-md text-label-md hover:opacity-90 transition-all shadow-sm"
-            >
-              <Icon name="add" /> SOUMETTRE UNE IDÉE
-            </button>
+        <section className="flex flex-col gap-4 border border-line bg-white px-6 py-6 lg:px-8">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="flex flex-col gap-2">
+              <p className="text-[14px] leading-5 text-ink-2">
+                <span className="label">{roleLabel}</span> · <time>{today}</time>
+              </p>
+              <h1 className="self-start border-b-[3px] border-line pb-1 text-[28px] leading-9 lg:text-[36px] lg:leading-[44px]">
+                Bonjour {firstName}
+              </h1>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <HpButton
+                role="publie"
+                icon={Plus}
+                onClick={() => {
+                  setSubmissionErrors({});
+                  const only = role === "manager" && myTeams.data?.length === 1 ? myTeams.data[0] : "";
+                  setSubmissionForm({ author_name: "", team: only, content: "", status: "en attente" });
+                }}
+              >
+                SOUMETTRE UNE IDÉE
+              </HpButton>
+              <HpButton role="consulte" icon={Download} disabled={exportReport.isPending} onClick={() => exportReport.mutate()}>
+                {exportReport.isPending ? "EXPORT EN COURS…" : "EXPORTER LE RAPPORT"}
+              </HpButton>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-xs items-center md:items-end md:justify-end">
-            <span className="font-label-sm text-label-sm text-on-surface-variant">
-              {email} · {roleLabel}
-            </span>
-            <button
-              onClick={() => signOut()}
-              className="flex items-center gap-xs px-md py-xs border border-outline bg-surface text-primary font-label-md text-label-md hover:bg-surface-container"
-            >
-              <Icon name="logout" /> DÉCONNEXION
-            </button>
-            {isAdmin && (<Link
-              to="/manage/news"
-              className="flex items-center gap-xs px-md py-xs border border-outline bg-surface text-primary font-label-md text-label-md hover:bg-surface-container transition-all"
-            >
-              <Icon name="database" /> GÉRER LES DONNÉES
-            </Link>)}
-            <Button
-              type="button"
-              variant="outline"
-              disabled={exportReport.isPending}
-              onClick={() => exportReport.mutate()}
-              className="h-auto rounded-none border-outline bg-surface px-md py-xs font-label-md text-label-md text-primary shadow-none hover:bg-surface-container"
-            >
-              <Icon name="file_download" /> {exportReport.isPending ? "EXPORT EN COURS…" : "EXPORTER LE RAPPORT"}
-            </Button>
-          </div>
-        </div>
+        </section>
 
         <div className="bento-grid">
           {/* News Management & Input */}
@@ -776,7 +779,7 @@ function ManagerSpace() {
             </div>
           </section>
         </div>
-      </main>
+      </div>
       <BlockerArchive open={archiveOpen} onClose={() => setArchiveOpen(false)} />
       <NewsReader news={readingNews} onClose={() => setReadingNews(null)} />
       <SubmissionReader
@@ -898,6 +901,6 @@ function ManagerSpace() {
           </form>
         </Modal>
       )}
-    </div>
+    </AppShell>
   );
 }

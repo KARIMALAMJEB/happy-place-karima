@@ -179,3 +179,62 @@
   word-break: break-word;
   min-width: 0;
 }
+
+/*
+ * Charte V2 « Corporate » (portée du prototype, voir docs/couleurs.md du prototype).
+ * Ajout sans collision : aucun de ces noms n'existe dans le thème d'origine.
+ * Les règles de base sont limitées à la coque V2 (classe .hp-shell) et à spécificité nulle (:where),
+ * pour ne rien changer aux pages qui ne sont pas encore portées.
+ */
+@theme {
+  --color-ecru: #f5f4f1;
+  --color-line: #cdcdd1;
+  --color-ink: #232428;
+  --color-ink-2: #68686d;
+  --color-anthracite: #28282d;
+  --color-on-anthracite: #f9f8f5;
+  --color-neutral-1: #eeedea;
+  --color-neutral-2: #e6e4e1;
+  --color-field: #55555a;
+
+  --font-title: "Bodoni Moda", Georgia, serif;
+  --font-body: "Inter Tight", system-ui, sans-serif;
+  --font-label: "Space Grotesk", system-ui, sans-serif;
+}
+
+@layer base {
+  :where(.hp-shell) {
+    color: var(--color-ink);
+    font-family: var(--font-body);
+    font-size: 14px;
+    line-height: 20px;
+    -webkit-font-smoothing: antialiased;
+  }
+  :where(.hp-shell) :is(h1, h2, h3) {
+    font-family: var(--font-title);
+    font-weight: 700;
+  }
+  /* Focus clavier : contour anthracite 3 px, décalage 2 px */
+  :where(.hp-shell) *:focus-visible {
+    outline: 3px solid var(--color-anthracite);
+    outline-offset: 2px;
+  }
+}
+
+@utility label {
+  font-family: var(--font-label);
+  font-weight: 700;
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+}
+
+@utility label-13 {
+  font-family: var(--font-label);
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 16px;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+}
