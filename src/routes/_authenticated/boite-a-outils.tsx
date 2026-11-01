@@ -42,7 +42,7 @@ function TitreCarte({ r }: { r: Ressource }) {
     );
   if (r.page === "actualites")
     return (
-      <Link to="/" className={classe}>
+      <Link to="/actualites" className={classe}>
         {r.titre}
       </Link>
     );

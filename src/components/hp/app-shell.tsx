@@ -1,6 +1,6 @@
 import { Link, useRouteContext, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ClipboardList, Contact, Database, LayoutDashboard, LogOut, Menu, Repeat, Search, Wrench, X } from "lucide-react";
+import { ClipboardList, Contact, Database, LayoutDashboard, LogOut, Menu, Newspaper, Repeat, Search, TrendingUp, Wrench, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { HpButton, HpIconButton } from "@/components/hp/button";
 import { signOut, type AppRole } from "@/lib/auth";
@@ -58,6 +58,8 @@ function Sidebar({ role, ouvert, onFermer }: { role: AppRole; ouvert: boolean; o
   const actifTableau = pathname === "/";
   const compteur = useCompteurDemandes(role);
   const actifGestion = pathname.startsWith("/manage");
+  const actifActus = pathname.startsWith("/actualites");
+  const actifIndic = pathname.startsWith("/indicateurs");
   const actifOutils = pathname.startsWith("/boite-a-outils");
   const actifAnnuaire = pathname.startsWith("/annuaire");
   const actifDemandes = pathname.startsWith("/demande") || pathname.startsWith("/deposer");
@@ -87,10 +89,18 @@ function Sidebar({ role, ouvert, onFermer }: { role: AppRole; ouvert: boolean; o
           <LayoutDashboard size={18} aria-hidden />
           <span className="flex-1">Tableau de bord</span>
         </Link>
+        <Link to="/actualites" aria-current={actifActus ? "page" : undefined} className={lien(actifActus)}>
+          <Newspaper size={18} aria-hidden />
+          <span className="flex-1">Actualités</span>
+        </Link>
         <Link to="/demandes" aria-current={actifDemandes ? "page" : undefined} className={lien(actifDemandes)}>
           <ClipboardList size={18} aria-hidden />
           <span className="flex-1">Demandes</span>
           {compteur.n > 0 && <Count label={compteur.label}>{compteur.n}</Count>}
+        </Link>
+        <Link to="/indicateurs" aria-current={actifIndic ? "page" : undefined} className={lien(actifIndic)}>
+          <TrendingUp size={18} aria-hidden />
+          <span className="flex-1">Indicateurs</span>
         </Link>
         <Link to="/boite-a-outils" aria-current={actifOutils ? "page" : undefined} className={lien(actifOutils)}>
           <Wrench size={18} aria-hidden />
