@@ -1,13 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  AlertTriangle, BookOpen, ChevronLeft, ChevronRight, ClipboardList, Download, FileText, Image as ImageIcon,
+  BookOpen, ChevronLeft, ChevronRight, ClipboardList, Download, FileText, Image as ImageIcon,
   ArrowRight, Newspaper, Pause, PenLine, Play, Plus, Send, TrendingUp, Wrench,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { DepartureNotices } from "@/components/departure-notices";
-import { BlockerArchive } from "@/components/dashboard-extras";
 import { HpButton, HpIconButton } from "@/components/hp/button";
 import { Tableau } from "@/components/hp/demandes-ui";
 import { Encadre, Picto } from "@/components/hp/encadre";
@@ -16,8 +15,8 @@ import { BandeauFiltre, RecapTuiles, buildTuiles } from "@/components/hp/recap";
 import { Couverture, estEntreprise, imagesDe, signature } from "@/components/hp/news-shared";
 import { TabButton, TabList } from "@/components/hp/tabs";
 import {
-  deleteDraftNews, deltaText, exportMyRecentSubmissions, fetchBlockers, fetchMetrics, fetchNews, formatMetricValue,
-  publishDraftNews, requestNewsAuthorization, authorizeNews, refuseNews, timeAgo, updateBlockerStatus, TREND_LABELS, type News,
+  deleteDraftNews, deltaText, exportMyRecentSubmissions, fetchMetrics, fetchNews, formatMetricValue,
+  publishDraftNews, requestNewsAuthorization, authorizeNews, refuseNews, TREND_LABELS, type News,
 } from "@/lib/dashboard";
 import { fetchAllRequests, fetchMyRequests, fetchToReview, fetchValidatedRequests } from "@/lib/requests";
 import { BOITE_A_OUTILS, ICONES_OUTILS } from "@/lib/outils";
@@ -56,7 +55,6 @@ function Accueil() {
   const validees = useQuery({ queryKey: ["requests", "validated"], queryFn: fetchValidatedRequests });
   const news = useQuery({ queryKey: ["news"], queryFn: fetchNews, retry: false });
   const metrics = useQuery({ queryKey: ["metrics"], queryFn: fetchMetrics, retry: false });
-  const blockers = useQuery({ queryKey: ["blockers"], queryFn: fetchBlockers, retry: false });
 
   const mesL = mes.data ?? [];
   const aTraiterL = atraiter.data ?? [];
@@ -71,12 +69,6 @@ function Accueil() {
     onError,
   });
 
-  const [archive, setArchive] = useState(false);
-  const setBlocker = useMutation({
-    mutationFn: updateBlockerStatus,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["blockers"] }),
-    onError,
-  });
   const publier = useMutation({
     mutationFn: publishDraftNews,
     onSuccess: () => { toast.success("Actualité publiée"); qc.invalidateQueries({ queryKey: ["news"] }); },
@@ -170,43 +162,6 @@ function Accueil() {
           compteur={`${(role === "admin" ? toutes.data : validees.data)?.length ?? 0} demande(s)`}>
           <Tableau lignes={((role === "admin" ? toutes.data : validees.data) ?? []).slice(0, LIGNES)} perspective={role === "admin" ? "valideur" : "lecteur"} vide="Aucune demande à afficher." />
           <VoirTout n={(role === "admin" ? toutes.data : validees.data)?.length ?? 0} />
-        </Encadre>
-
-        <Encadre id="bloquants" icon={AlertTriangle} title="Points bloquants" subtitle="Alertes opérationnelles en cours" compteur={`${blockers.data?.length ?? 0} point(s)`}
-          filtre={<button type="button" onClick={() => setArchive(true)} className="label underline underline-offset-4 hover:text-anthracite">Voir l'archive</button>}>
-          {blockers.isError ? (
-            <p role="alert" className="px-6 py-6">Les points bloquants sont indisponibles.</p>
-          ) : (blockers.data ?? []).length === 0 ? (
-            <p className="px-6 py-6 text-[14px] leading-5 text-ink-2">Aucun point bloquant en cours.</p>
-          ) : (
-            <ul>
-              {(blockers.data ?? []).map((b) => {
-                const critique = b.severity === "critical";
-                return (
-                  <li key={b.id} className="relative flex flex-wrap items-start justify-between gap-3 border-t border-line py-4 pr-6 pl-6">
-                    <span aria-hidden className={cn("absolute inset-y-0 left-0 w-1", critique ? "bg-[#C2272D]" : "bg-[#B8651B]")} />
-                    <div className="flex min-w-0 flex-col gap-1">
-                      <p className="text-[16px] leading-6 font-semibold">{b.title}</p>
-                      {b.description && <p className="text-[14px] leading-5 text-ink-2">{b.description}</p>}
-                      <p className="text-[12px] leading-4 text-ink-2">{b.department} · {critique ? "Critique · " : ""}Mis à jour {timeAgo(b.updated_at)}</p>
-                    </div>
-                    <select
-                      aria-label={`Statut de ${b.title}`}
-                      value={b.status}
-                      disabled={role !== "admin"}
-                      onChange={(e) => setBlocker.mutate({ id: b.id, status: e.target.value })}
-                      className="min-h-11 border border-field bg-white px-3 text-[14px] disabled:bg-neutral-1 disabled:text-ink-2"
-                    >
-                      <option>OUVERT</option>
-                      <option>EN COURS</option>
-                      <option>SURVEILLANCE</option>
-                      <option disabled={b.status === "OUVERT"}>RÉSOLU</option>
-                    </select>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
         </Encadre>
 
         {role === "admin" && (
@@ -305,7 +260,6 @@ function Accueil() {
           })}
         </div>
       </Encadre>
-      <BlockerArchive open={archive} onClose={() => setArchive(false)} />
     </HpPage>
   );
 }
