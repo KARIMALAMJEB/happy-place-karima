@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { LogIn, Mail } from "lucide-react";
+import { Eye, EyeOff, LogIn, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { HpButton } from "@/components/hp/button";
 
@@ -27,6 +27,7 @@ function Connexion() {
   const { refus } = Route.useSearch();
   const [email, setEmail] = useState("");
   const [mdp, setMdp] = useState("");
+  const [voir, setVoir] = useState(false);
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -101,7 +102,18 @@ function Connexion() {
             </div>
             <div className="flex flex-col gap-2">
               <label htmlFor="mdp" className="label text-ink">Mot de passe</label>
-              <input id="mdp" type="password" autoComplete="current-password" value={mdp} onChange={(e) => setMdp(e.target.value)} className={champ} />
+              <div className="relative">
+                <input id="mdp" type={voir ? "text" : "password"} autoComplete="current-password" value={mdp} onChange={(e) => setMdp(e.target.value)} className={`${champ} pr-12`} />
+                <button
+                  type="button"
+                  onClick={() => setVoir((v) => !v)}
+                  aria-label={voir ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+                  aria-pressed={voir}
+                  className="absolute inset-y-0 right-0 flex w-11 cursor-pointer items-center justify-center text-ink-2 hover:text-ink"
+                >
+                  {voir ? <EyeOff size={18} aria-hidden /> : <Eye size={18} aria-hidden />}
+                </button>
+              </div>
             </div>
             {erreur && <p role="alert" className="text-[12px] leading-4 font-semibold text-[#8E1A1F]">{erreur}</p>}
             {info && <p role="status" className="text-[14px] leading-5">{info}</p>}

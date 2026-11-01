@@ -119,7 +119,11 @@ function Accueil() {
               </HpButton>
             </div>
           </div>
-          <RecapTuiles tuiles={tuiles} actif={tuile} onChoisir={(t) => setTuile(t ? t.id : null)} />
+          <RecapTuiles tuiles={tuiles} actif={tuile} onChoisir={(t) => {
+            setTuile(t ? t.id : null);
+            // Comme au prototype : la tuile filtre sa liste et y amène
+            if (t) requestAnimationFrame(() => document.getElementById(t.onglet === "mes" ? "mes-demandes" : "a-valider")?.scrollIntoView({ block: "start", behavior: "smooth" }));
+          }} />
         </section>
 
         <div className="grid items-stretch gap-6 lg:grid-cols-3">
