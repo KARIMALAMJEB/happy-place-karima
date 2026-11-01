@@ -565,20 +565,15 @@ function ManagerSpace() {
                   </div>
                   <SubmissionPreview content={s.content} onOpen={() => setReading(s)} />
                   <AttachmentLink path={s.attachment_path} name={s.attachment_name} />
-                  {canReview && <div className="flex gap-xs pt-xs">
-                    <button
-                      onClick={() => startReject(s)}
-                      className="flex-1 py-1 border border-outline text-primary font-label-sm text-label-sm hover:bg-surface-container transition-colors"
+                  {canReview && (
+                    <Link
+                      to="/demande/$id"
+                      params={{ id: s.id }}
+                      className="label-13 flex h-9 items-center justify-center bg-anthracite text-on-anthracite hover:opacity-90"
                     >
-                      REFUSER
-                    </button>
-                    <button
-                      onClick={() => review.mutate({ id: s.id, status: "validée" })}
-                      className="flex-1 py-1 bg-primary text-on-primary font-label-sm text-label-sm hover:opacity-90 transition-colors"
-                    >
-                      VALIDER
-                    </button>
-                  </div>}
+                      OUVRIR ET TRAITER
+                    </Link>
+                  )}
                 </div>
               ))}
             </div>

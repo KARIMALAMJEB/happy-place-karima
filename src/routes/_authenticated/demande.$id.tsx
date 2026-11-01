@@ -108,7 +108,8 @@ function DemandeDetail() {
 
   const etat = stateOf(r);
   const estAuteur = (r.submitted_by_email ?? "").toLowerCase() === email;
-  const peutDecider = role !== "collaborateur" && !estAuteur;
+  // Démo : un même compte change de rôle, il peut donc décider sa propre demande. À réactiver avec la vraie connexion (lot sécurité).
+  const peutDecider = role !== "collaborateur";
   const peutSuivre = role !== "collaborateur" && etat === "validee";
   const auteur = r.confidential_identity && !estAuteur && role === "collaborateur" ? "Auteur confidentiel" : r.author_name;
 
