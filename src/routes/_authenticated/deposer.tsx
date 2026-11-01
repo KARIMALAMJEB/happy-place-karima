@@ -8,7 +8,7 @@ import { RichTextEditor } from "@/components/hp/rich-text";
 import { HpPage, useOwnProfile } from "@/components/hp/page";
 import { ReglesArbitrage } from "@/components/hp/regles";
 import { supabase } from "@/integrations/supabase/client";
-import { MAX_PDF_BYTES, THEMES, VISIBILITY_LABEL, createRequest, type Theme, type Visibility } from "@/lib/requests";
+import { MAX_PDF_BYTES, MAX_PIECES_DEPOT, THEMES, VISIBILITY_LABEL, createRequest, type Theme, type Visibility } from "@/lib/requests";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/deposer")({
@@ -83,7 +83,7 @@ function DeposerPage() {
   const [theme, setTheme] = useState<Theme | "">("");
   const [visibilite, setVisibilite] = useState<Visibility | null>(null);
   const [confidentielle, setConfidentielle] = useState(false);
-  const [fichier, setFichier] = useState<File | null>(null);
+  const [fichiers, setFichiers] = useState<File[]>([]);
   const [equipe, setEquipe] = useState("");
   const [erreurs, setErreurs] = useState<Record<string, string>>({});
 
@@ -147,7 +147,7 @@ function DeposerPage() {
           confidential_identity: confidentielle,
           validator_type: destinataire ?? "manager",
         },
-        fichier,
+        fichiers,
       ),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["requests"] });
@@ -174,13 +174,18 @@ function DeposerPage() {
 
   const [survol, setSurvol] = useState(false);
   const ajouterPdf = (liste: FileList | null) => {
-    const f = liste?.[0];
-    if (!f) return;
-    if (f.type !== "application/pdf" && !f.name.toLowerCase().endsWith(".pdf")) return setErreurs({ ...erreurs, fichier: `« ${f.name} » refusé : seuls les fichiers PDF sont acceptés.` });
-    if (f.size > MAX_PDF_BYTES) return setErreurs({ ...erreurs, fichier: `« ${f.name} » refusé : il dépasse 20 Mo.` });
+    if (!liste) return;
+    const ok: File[] = [];
+    const refus: string[] = [];
+    for (const f of Array.from(liste)) {
+      if (fichiers.length + ok.length >= MAX_PIECES_DEPOT) refus.push(`« ${f.name} » non ajouté : ${MAX_PIECES_DEPOT} fichiers maximum.`);
+      else if (f.type !== "application/pdf" && !f.name.toLowerCase().endsWith(".pdf")) refus.push(`« ${f.name} » refusé : seuls les fichiers PDF sont acceptés.`);
+      else if (f.size > MAX_PDF_BYTES) refus.push(`« ${f.name} » refusé : il dépasse 20 Mo.`);
+      else ok.push(f);
+    }
     const { fichier: _f, ...reste } = erreurs;
-    setErreurs(reste);
-    setFichier(f);
+    setErreurs(refus.length ? { ...reste, fichier: refus.join(" ") } : reste);
+    if (ok.length) setFichiers([...fichiers, ...ok]);
   };
   const [message, setMessage] = useState("");
   const enregistrerBrouillon = () => {
@@ -314,8 +319,8 @@ function DeposerPage() {
 
             <Bloc titre="Pièces jointes (facultatif)">
               <div className="flex flex-col gap-3">
-                {fichier ? (
-                  <p className="bg-neutral-1 px-4 py-3 text-[14px] leading-5">1 fichier rattaché : retire-le pour en ajouter un autre.</p>
+                {fichiers.length >= MAX_PIECES_DEPOT ? (
+                  <p className="bg-neutral-1 px-4 py-3 text-[14px] leading-5">{MAX_PIECES_DEPOT} fichiers rattachés : retire un fichier pour en ajouter un autre.</p>
                 ) : (
                   <label
                     onDragOver={(e) => { e.preventDefault(); setSurvol(true); }}
@@ -324,22 +329,24 @@ function DeposerPage() {
                     className={cn("flex cursor-pointer flex-col items-center gap-2 border border-dashed border-field px-6 py-6 text-center", survol ? "bg-neutral-2" : "bg-neutral-1 hover:bg-neutral-2")}
                   >
                     <Upload size={20} aria-hidden />
-                    <span className="text-[14px] leading-5">Glisse ton fichier ici ou <span className="font-semibold underline underline-offset-4">parcours tes dossiers</span></span>
-                    <span className="text-[12px] leading-4 text-ink-2">PDF uniquement · 20 Mo maximum</span>
-                    <input type="file" accept="application/pdf,.pdf" className="sr-only" onChange={(e) => { ajouterPdf(e.target.files); e.target.value = ""; }} />
+                    <span className="text-[14px] leading-5">Glisse tes fichiers ici ou <span className="font-semibold underline underline-offset-4">parcours tes dossiers</span></span>
+                    <span className="text-[12px] leading-4 text-ink-2">PDF uniquement · 20 Mo maximum par document · {MAX_PIECES_DEPOT} fichiers maximum</span>
+                    <input type="file" multiple accept="application/pdf,.pdf" className="sr-only" onChange={(e) => { ajouterPdf(e.target.files); e.target.value = ""; }} />
                   </label>
                 )}
                 <Erreur>{erreurs.fichier}</Erreur>
-                {fichier && (
+                {fichiers.length > 0 && (
                   <div className="flex flex-col gap-2">
                     <h3 className="label text-ink">Documents rattachés</h3>
                     <ul className="flex flex-col border border-line">
-                      <li className="flex items-center gap-3 px-4 py-1">
-                        <FileText size={16} aria-hidden className="text-ink-2" />
-                        <span className="min-w-0 flex-1 truncate text-[14px] leading-5">{fichier.name}</span>
-                        <span className="text-[12px] leading-4 text-ink-2">{taille(fichier.size)}</span>
-                        <HpIconButton icon={Trash2} label={`Retirer ${fichier.name}`} className="border-0" onClick={() => setFichier(null)} />
-                      </li>
+                      {fichiers.map((f, i) => (
+                        <li key={`${f.name}-${i}`} className="flex items-center gap-3 border-b border-line px-4 py-1 last:border-b-0">
+                          <FileText size={16} aria-hidden className="text-ink-2" />
+                          <span className="min-w-0 flex-1 truncate text-[14px] leading-5">{f.name}</span>
+                          <span className="text-[12px] leading-4 text-ink-2">{taille(f.size)}</span>
+                          <HpIconButton icon={Trash2} label={`Retirer ${f.name}`} className="border-0" onClick={() => setFichiers(fichiers.filter((_, k) => k !== i))} />
+                        </li>
+                      ))}
                     </ul>
                   </div>
                 )}

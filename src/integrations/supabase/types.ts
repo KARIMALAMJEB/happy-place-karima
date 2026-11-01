@@ -390,6 +390,7 @@ export type Database = {
         Row: {
           attachment_name: string | null
           attachment_path: string | null
+          attachments: Json
           author_name: string
           content: string
           created_at: string
@@ -406,6 +407,7 @@ export type Database = {
         Insert: {
           attachment_name?: string | null
           attachment_path?: string | null
+          attachments?: Json
           author_name: string
           content: string
           created_at?: string
@@ -422,6 +424,7 @@ export type Database = {
         Update: {
           attachment_name?: string | null
           attachment_path?: string | null
+          attachments?: Json
           author_name?: string
           content?: string
           created_at?: string

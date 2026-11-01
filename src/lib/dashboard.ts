@@ -42,6 +42,7 @@ export type Submission = {
   submitted_by_email?: string | null;
   attachment_path?: string | null;
   attachment_name?: string | null;
+  attachments?: unknown;
 };
 
 export const REJECTION_CATEGORIES = [

@@ -43,6 +43,7 @@ export type RequestRow = {
   complement: unknown;
   attachment_path: string | null;
   attachment_name: string | null;
+  attachments?: unknown;
   author_seen_at: string | null;
   reminded_at: string | null;
 };
@@ -104,26 +105,38 @@ export type NewRequest = {
   validator_type: "manager" | "admin";
 };
 
-export async function createRequest(input: NewRequest, file?: File | null) {
-  let attachment_path: string | null = null;
-  let attachment_name: string | null = null;
-  if (file) {
-    if (file.type !== "application/pdf") throw new Error("Seuls les fichiers PDF sont acceptés.");
-    if (file.size > MAX_PDF_BYTES) throw new Error("Le fichier dépasse 20 Mo.");
+export const MAX_PIECES_DEPOT = 3;
+export type PieceJointe = { path: string; name: string };
+
+// Pièces jointes d'une demande : colonne attachments, ou ancienne pièce unique
+export function piecesOf(r: { attachments?: unknown; attachment_path?: string | null; attachment_name?: string | null }): PieceJointe[] {
+  const liste = Array.isArray(r.attachments) ? (r.attachments as PieceJointe[]).filter((x) => x && x.path) : [];
+  if (liste.length) return liste;
+  return r.attachment_path ? [{ path: r.attachment_path, name: r.attachment_name ?? "Document" }] : [];
+}
+
+export async function createRequest(input: NewRequest, files: File[] = []) {
+  if (files.length > MAX_PIECES_DEPOT) throw new Error(`${MAX_PIECES_DEPOT} fichiers maximum.`);
+  const pieces: PieceJointe[] = [];
+  if (files.length) {
     const { data: u } = await sb.auth.getUser();
     if (!u.user) throw new Error("Session expirée : reconnecte-toi.");
-    attachment_path = `${u.user.id}/${crypto.randomUUID()}.pdf`;
-    attachment_name = file.name.slice(0, 200);
-    const { error: upErr } = await sb.storage
-      .from(ATTACHMENT_BUCKET)
-      .upload(attachment_path, file, { contentType: "application/pdf" });
-    if (upErr) throw upErr;
+    for (const file of files) {
+      if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) throw new Error("Seuls les fichiers PDF sont acceptés.");
+      if (file.size > MAX_PDF_BYTES) throw new Error("Le fichier dépasse 20 Mo.");
+      const path = `${u.user.id}/${crypto.randomUUID()}.pdf`;
+      const { error: upErr } = await sb.storage.from(ATTACHMENT_BUCKET).upload(path, file, { contentType: "application/pdf" });
+      if (upErr) throw upErr;
+      pieces.push({ path, name: file.name.slice(0, 200) });
+    }
   }
   const { error } = await sb.from("submissions").insert({
     ...input,
     status: "en attente",
-    attachment_path,
-    attachment_name,
+    // le premier fichier reste aussi dans les anciennes colonnes (suppression et départs gérés par la base)
+    attachment_path: pieces[0]?.path ?? null,
+    attachment_name: pieces[0]?.name ?? null,
+    attachments: pieces,
   });
   if (error) throw error;
 }

@@ -1,5 +1,6 @@
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Linkify } from "@/components/linkify";
+import { piecesOf } from "@/lib/requests";
 import { AttachmentLink } from "@/components/attachment-link";
 import { formatExactDate } from "@/components/expandable-card";
 import type { Submission } from "@/lib/dashboard";
@@ -48,7 +49,7 @@ export function SubmissionReader({
               <p className="font-body-md text-body-md text-on-surface whitespace-pre-line wrap-anywhere">
                 <Linkify text={s.content} />
               </p>
-              <AttachmentLink path={s.attachment_path} name={s.attachment_name} />
+              {piecesOf(s).map((f) => <AttachmentLink key={f.path} path={f.path} name={f.name} />)}
               {s.status === "refusée" && s.rejection_category && (
                 <div className="p-sm bg-error-container text-on-error-container text-body-sm wrap-anywhere">
                   <p className="font-bold">Motif : {s.rejection_category}</p>

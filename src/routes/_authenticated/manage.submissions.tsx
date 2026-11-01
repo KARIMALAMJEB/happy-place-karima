@@ -13,6 +13,7 @@ import {
   TextArea,
   TextInput,
 } from "@/components/manage/crud-ui";
+import { piecesOf } from "@/lib/requests";
 import { AttachmentLink } from "@/components/attachment-link";
 import { CharCounter, rejectionErrorMessage } from "@/components/expandable-card";
 import { Linkify } from "@/components/linkify";
@@ -149,7 +150,7 @@ function ManageSubmissions() {
               >
                 Ouvrir
               </button>
-              <AttachmentLink path={s.attachment_path} name={s.attachment_name} />
+              {piecesOf(s).map((f) => <AttachmentLink key={f.path} path={f.path} name={f.name} />)}
               <p className="text-[11px] font-label-sm text-on-surface-variant uppercase mt-xs">
                  {submissionStatusLabels[s.status] ?? s.status} • {timeAgo(s.created_at)}
               </p>

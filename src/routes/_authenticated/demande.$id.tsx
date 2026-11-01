@@ -13,6 +13,7 @@ import { BloquanteMot, StatutBadge } from "@/components/hp/statut";
 import {
   VISIBILITY_LABEL,
   attachmentUrl,
+  piecesOf,
   MAX_JUSTIFICATIFS,
   MAX_PDF_BYTES,
   completeRequest,
@@ -231,7 +232,7 @@ function DemandeDetail() {
           <div className="flex max-w-[72ch] flex-col gap-2 text-[14px] leading-6">
             <RichText texte={r.content} />
           </div>
-          {(r.theme || r.attachment_path) && (
+          {(r.theme || piecesOf(r).length > 0) && (
             <dl className="flex flex-col gap-3 pt-2">
               {r.theme && (
                 <div className="flex gap-2 text-[14px] leading-5">
@@ -239,15 +240,17 @@ function DemandeDetail() {
                   <dd>{r.theme}</dd>
                 </div>
               )}
-              {r.attachment_path && (
+              {piecesOf(r).length > 0 && (
                 <div className="flex flex-col gap-2">
                   <dt className="label text-ink-2">Pièces jointes</dt>
-                  <dd>
-                    <button type="button" disabled={pj.isPending} onClick={() => pj.mutate(r.attachment_path!)} className="flex cursor-pointer items-center gap-2 text-[14px] leading-5 underline underline-offset-4 hover:text-anthracite">
-                      <Paperclip size={16} aria-hidden className="text-ink-2" />
-                      {r.attachment_name ?? "Ouvrir le PDF"}
-                    </button>
-                  </dd>
+                  {piecesOf(r).map((f) => (
+                    <dd key={f.path}>
+                      <button type="button" disabled={pj.isPending} onClick={() => pj.mutate(f.path)} className="flex cursor-pointer items-center gap-2 text-[14px] leading-5 underline underline-offset-4 hover:text-anthracite">
+                        <Paperclip size={16} aria-hidden className="text-ink-2" />
+                        {f.name}
+                      </button>
+                    </dd>
+                  ))}
                 </div>
               )}
             </dl>
