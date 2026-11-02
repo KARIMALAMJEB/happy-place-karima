@@ -44,7 +44,7 @@ export function TabList({ label, children }: { label: string; children: ReactNod
     cible?.click();
   };
   return (
-    <div role="tablist" aria-label={label} onKeyDown={clavier} className="flex">
+    <div role="tablist" aria-label={label} onKeyDown={clavier} className="flex max-w-full overflow-x-auto">
       {children}
     </div>
   );
