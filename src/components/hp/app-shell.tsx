@@ -70,7 +70,7 @@ function useCompteurActus(role: AppRole) {
   return { n, label: `${n} annonce${n > 1 ? "s" : ""} autorisée${n > 1 ? "s" : ""} à publier` };
 }
 
-function Sidebar({ role, ouvert, onFermer }: { role: AppRole; ouvert: boolean; onFermer: () => void }) {
+function Sidebar({ role, ouvert, onFermer, accueil }: { role: AppRole; ouvert: boolean; onFermer: () => void; accueil: boolean }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const actifTableau = pathname === "/";
   const compteur = useCompteurDemandes(role);
@@ -91,11 +91,12 @@ function Sidebar({ role, ouvert, onFermer }: { role: AppRole; ouvert: boolean; o
       id="menu-lateral"
       aria-label="Menu"
       className={cn(
-        "fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] flex-col overflow-y-auto border-r border-line bg-white lg:z-20 lg:flex lg:w-64",
+        "fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] flex-col overflow-y-auto border-r border-line bg-white",
+        !accueil && "lg:z-20 lg:flex lg:w-64",
         ouvert ? "flex" : "hidden",
       )}
     >
-      <div className="flex justify-end border-b border-line p-2 lg:hidden">
+      <div className={cn("flex justify-end border-b border-line p-2", !accueil && "lg:hidden")}>
         <HpIconButton icon={X} label="Fermer le menu" onClick={onFermer} />
       </div>
       <Link to="/" className="flex h-16 flex-col justify-center border-b border-line px-5">
@@ -148,14 +149,14 @@ function Sidebar({ role, ouvert, onFermer }: { role: AppRole; ouvert: boolean; o
   );
 }
 
-function Header({ name, role, sousTitre, menuOuvert, onMenu }: { name: string; role: AppRole; sousTitre?: string | null; menuOuvert: boolean; onMenu: () => void }) {
+function Header({ name, role, sousTitre, menuOuvert, onMenu, accueil }: { name: string; role: AppRole; sousTitre?: string | null; menuOuvert: boolean; onMenu: () => void; accueil: boolean }) {
   return (
-    <header className="fixed top-0 right-0 left-0 z-10 flex h-16 items-center justify-between gap-4 border-b border-line bg-white px-4 lg:left-64 lg:gap-6 lg:px-8">
+    <header className={cn("fixed top-0 right-0 left-0 z-10 flex h-16 items-center justify-between gap-4 border-b border-line bg-white px-4 lg:gap-6 lg:px-8", !accueil && "lg:left-64")}>
       <div className="flex items-center gap-3 lg:gap-6">
         <HpButton
           role="consulte"
           icon={Menu}
-          className="lg:hidden"
+          className={accueil ? undefined : "lg:hidden"}
           aria-expanded={menuOuvert}
           aria-controls="menu-lateral"
           onClick={onMenu}
@@ -204,6 +205,8 @@ export function AppShell({ name, role, equipe, children }: { name: string; role:
   // Mobile : menu latéral en tiroir, refermé à chaque changement de page et avec Échap
   const [menu, setMenu] = useState(false);
   const chemin = useRouterState({ select: (s) => s.location.href });
+  // Sur le tableau de bord, les accès rapides font office de navigation : le menu latéral passe en tiroir
+  const accueil = useRouterState({ select: (s) => s.location.pathname === "/" });
   useEffect(() => setMenu(false), [chemin]);
   useEffect(() => {
     if (!menu) return;
@@ -215,17 +218,17 @@ export function AppShell({ name, role, equipe, children }: { name: string; role:
   return (
     <div className="hp-shell min-h-screen bg-ecru">
       <SkipLink />
-      <Sidebar role={role} ouvert={menu} onFermer={() => setMenu(false)} />
+      <Sidebar role={role} ouvert={menu} onFermer={() => setMenu(false)} accueil={accueil} />
       {menu && (
         <button
           type="button"
           aria-label="Fermer le menu"
           onClick={() => setMenu(false)}
-          className="fixed inset-0 z-40 bg-anthracite/50 lg:hidden"
+          className={cn("fixed inset-0 z-40 bg-anthracite/50", !accueil && "lg:hidden")}
         />
       )}
-      <Header name={name} role={role} sousTitre={equipe} menuOuvert={menu} onMenu={() => setMenu(true)} />
-      <div className="flex min-h-screen flex-col pt-16 lg:pl-64">
+      <Header name={name} role={role} sousTitre={equipe} menuOuvert={menu} onMenu={() => setMenu(true)} accueil={accueil} />
+      <div className={cn("flex min-h-screen flex-col pt-16", !accueil && "lg:pl-64")}>
         <main id="contenu" tabIndex={-1} className="flex-1 focus:outline-none">
           <div className="mx-auto flex max-w-[1240px] flex-col gap-6 px-4 py-4 lg:px-8 lg:py-8">{children}</div>
         </main>
