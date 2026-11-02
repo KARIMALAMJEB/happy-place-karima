@@ -40,9 +40,9 @@ export function Encadre({
     >
       <div className="flex flex-col gap-3 border-b border-line bg-neutral-1 px-6 py-3">
         <div className="flex min-h-10 items-center justify-between gap-4">
-          <div className="flex min-w-[240px] items-center gap-3">
+          <div className="flex min-w-0 sm:min-w-[240px] items-center gap-3">
             {icon && <Picto icon={icon} className="bg-white" />}
-            <div className="min-w-[240px]">
+            <div className="min-w-0 sm:min-w-[240px]">
               <h2 className="text-[22px] leading-7 text-ink">{title}</h2>
               {subtitle && <p className="text-[12px] leading-4 text-ink-2">{subtitle}</p>}
             </div>

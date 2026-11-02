@@ -101,7 +101,7 @@ function DirectoryPage() {
           <h1 className="text-[36px] leading-[44px]">Annuaire</h1>
           <p className="text-[16px] leading-6">Trouve la bonne personne et son équipe.</p>
         </div>
-        <label className="relative flex items-center">
+        <label className="relative flex w-full items-center sm:w-auto">
           <span className="sr-only">Rechercher une personne ou une équipe</span>
           <Search size={16} aria-hidden className="pointer-events-none absolute left-3 text-ink-2" />
           <input
@@ -109,7 +109,7 @@ function DirectoryPage() {
             value={recherche}
             onChange={(e) => setRecherche(e.target.value)}
             placeholder="Nom, équipe ou rôle"
-            className="h-11 w-72 border border-field bg-white pr-3 pl-9 text-[14px] text-ink placeholder:text-ink-2"
+            className="h-11 w-full border border-field sm:w-72 bg-white pr-3 pl-9 text-[14px] text-ink placeholder:text-ink-2"
           />
         </label>
       </header>

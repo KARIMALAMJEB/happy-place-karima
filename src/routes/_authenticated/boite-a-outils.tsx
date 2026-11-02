@@ -140,7 +140,7 @@ function Page() {
             AJOUTER UNE RESSOURCE
           </HpButton>
         )}
-        <label className="relative flex items-center">
+        <label className="relative flex w-full items-center sm:w-auto">
           <span className="sr-only">Rechercher dans la boîte à outils</span>
           <Search size={16} aria-hidden className="pointer-events-none absolute left-3 text-ink-2" />
           <input
@@ -148,7 +148,7 @@ function Page() {
             value={recherche}
             onChange={(e) => setRecherche(e.target.value)}
             placeholder="Rechercher un outil, un process…"
-            className="h-11 w-72 border border-field bg-white pr-3 pl-9 text-[14px] text-ink placeholder:text-ink-2"
+            className="h-11 w-full border border-field sm:w-72 bg-white pr-3 pl-9 text-[14px] text-ink placeholder:text-ink-2"
           />
         </label>
         </div>
@@ -194,7 +194,7 @@ function Page() {
           if (items.length === 0 && q) return null;
           return (
             <section key={c} id={c} className="flex scroll-mt-24 flex-col border border-line border-l-4 border-l-anthracite bg-white">
-              <div className="flex items-center gap-4 border-b border-line bg-neutral-1 px-6 py-4">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-line bg-neutral-1 px-6 py-4">
                 <Picto icon={Icon} className="bg-white" />
                 <h2 className="flex-1 text-[22px] leading-7 text-anthracite">{TITRES[c]}</h2>
                 <span className="text-[14px] leading-5 text-ink">
@@ -207,7 +207,7 @@ function Page() {
                 )}
               </div>
               {items.length === 0 && <p className="px-6 py-4 text-[14px] text-ink-2">Aucun élément dans cette catégorie.</p>}
-              <ul className="grid gap-4 p-6 md:grid-cols-2">{items.map(carte)}</ul>
+              <ul className="grid grid-cols-[minmax(0,1fr)] gap-4 p-6 md:grid-cols-2">{items.map(carte)}</ul>
             </section>
           );
         })}

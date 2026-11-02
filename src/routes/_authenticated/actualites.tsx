@@ -244,11 +244,11 @@ function Fil({ news, loading, error, redacteur }: { news: News[]; loading: boole
             <TabButton active={onglet === "equipe"} onClick={() => setOnglet("equipe")}>{`MON ÉQUIPE (${equipe.length})`}</TabButton>
             <TabButton active={onglet === "entreprise"} onClick={() => setOnglet("entreprise")}>{`ENTREPRISE (${entreprise.length})`}</TabButton>
           </TabList>
-          <div className="flex items-center gap-3">
-            <label className="relative flex items-center">
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="relative flex w-full items-center sm:w-auto">
               <span className="sr-only">Rechercher une actualité</span>
               <Search size={16} aria-hidden className="pointer-events-none absolute left-3 text-ink-2" />
-              <input type="search" value={recherche} onChange={(e) => setRecherche(e.target.value)} placeholder="Rechercher une actualité" className="h-11 w-64 border border-field bg-white pr-3 pl-9 text-[14px] text-ink placeholder:text-ink-2" />
+              <input type="search" value={recherche} onChange={(e) => setRecherche(e.target.value)} placeholder="Rechercher une actualité" className="h-11 w-full border border-field bg-white pr-3 pl-9 sm:w-64 text-[14px] text-ink placeholder:text-ink-2" />
             </label>
             <button type="button" aria-expanded={panneau} aria-controls="filtres-actualites" onClick={() => setPanneau((p) => !p)} className={hpButtonVariants({ role: "consulte" })}>
               <SlidersHorizontal size={16} aria-hidden />

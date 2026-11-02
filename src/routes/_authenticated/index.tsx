@@ -140,7 +140,7 @@ function Accueil() {
           </ul>
         </nav>
 
-        <div className="grid items-stretch gap-6 lg:grid-cols-3">
+        <div className="grid grid-cols-[minmax(0,1fr)] items-stretch gap-6 lg:grid-cols-3">
           <Carrousel className="lg:col-span-2" news={publiees} loading={news.isLoading} error={news.isError} equipe={team} />
           <Indicateurs metrics={metrics.data} error={metrics.isError} />
         </div>

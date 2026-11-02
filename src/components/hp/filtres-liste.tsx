@@ -22,7 +22,7 @@ export function BarreFiltres({ recherche, onRecherche, placeholder, equipe, onEq
 }) {
   return (
     <div role="search" className="flex flex-wrap items-center gap-3">
-      <label className="relative min-w-[240px] flex-1">
+      <label className="relative min-w-0 sm:min-w-[240px] flex-1">
         <span className="sr-only">Rechercher</span>
         <Search size={16} aria-hidden className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-ink-2" />
         <input
