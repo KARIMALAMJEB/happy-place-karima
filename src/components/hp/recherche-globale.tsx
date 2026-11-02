@@ -110,7 +110,7 @@ export function RechercheGlobale({ role, equipe }: { role: AppRole; equipe?: str
     <div ref={racine} role="search" className="relative hidden lg:block">
       <label className="relative flex items-center">
         <span className="sr-only">Rechercher une demande, une actualité, une personne ou un document</span>
-        <Search size={16} aria-hidden className="pointer-events-none absolute left-3 text-ink-2" />
+        <Search size={18} aria-hidden className="pointer-events-none absolute left-3 text-anthracite" />
         <input
           type="search"
           role="combobox"
@@ -122,8 +122,8 @@ export function RechercheGlobale({ role, equipe }: { role: AppRole; equipe?: str
           onChange={(e) => { setSaisie(e.target.value); setOuvert(true); }}
           onFocus={() => setOuvert(true)}
           onKeyDown={clavier}
-          placeholder="Rechercher une demande, une actualité, une personne"
-          className="h-11 w-96 border border-field bg-white pr-3 pl-9 text-[14px] text-ink placeholder:text-ink-2"
+          placeholder="Rechercher une demande, une actualité, une personne…"
+          className="h-11 w-[26rem] border border-transparent border-b-line bg-neutral-1 pr-3 pl-10 text-[14px] text-ink placeholder:text-ink-2 focus:bg-white xl:w-[30rem]"
         />
       </label>
       {ouvert && cherche && (
