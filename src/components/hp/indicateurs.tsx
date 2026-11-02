@@ -10,7 +10,7 @@ const ROSE = "#C99695";
 const ROSE_CLAIR = "#F5D5D4";
 const PECHE = "#F0D0BC";
 
-const tuile = "flex flex-col gap-3 border border-line bg-white p-4";
+const ligne = "flex min-h-16 items-center gap-4 border-b border-line bg-white px-6 py-3 last:border-b-0";
 
 export const dateMaj = (iso: string) =>
   new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Paris" }).format(new Date(iso));
@@ -43,7 +43,7 @@ function Courbe({ serie }: { serie: number[] }) {
   const ligne = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
   const aire = `${ligne} L${W},${H} L0,${H} Z`;
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="h-10 w-full" aria-hidden>
+    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="h-7 w-full" aria-hidden>
       <path d={aire} fill={ROSE_CLAIR} />
       <path d={ligne} fill="none" stroke={ANTHRACITE} strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
     </svg>
@@ -55,7 +55,7 @@ function Barres({ serie }: { serie: number[] }) {
   const max = Math.max(...serie) || 1;
   const l = W / serie.length;
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="h-10 w-full" aria-hidden>
+    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="h-7 w-full" aria-hidden>
       {serie.map((v, i) => {
         const h = Math.max(3, (v / max) * (H - 4));
         return <rect key={i} x={i * l + 2} y={H - h} width={l - 4} height={h} fill={i === serie.length - 1 ? ANTHRACITE : PECHE} />;
@@ -68,7 +68,7 @@ function Barres({ serie }: { serie: number[] }) {
 function Jauge({ valeur }: { valeur: number }) {
   const pct = Math.max(0, Math.min(100, valeur));
   return (
-    <svg viewBox={`0 0 ${W} 12`} preserveAspectRatio="none" className="h-3 w-full" aria-hidden>
+    <svg viewBox={`0 0 ${W} 12`} preserveAspectRatio="none" className="h-2.5 w-full" aria-hidden>
       <rect x="0" y="2" width={W} height="8" fill={ROSE_CLAIR} />
       <rect x="0" y="2" width={(pct / 100) * W} height="8" fill={ROSE} />
       <rect x={(pct / 100) * W - 1} y="0" width="2" height="12" fill={ANTHRACITE} />
@@ -82,41 +82,39 @@ function Graphique({ m, serie }: { m: Metric; serie?: number[] }) {
   return m.unit === "j" ? <Barres serie={serie} /> : <Courbe serie={serie} />;
 }
 
-function Contenu({ m, serie, lien }: { m: Metric; serie?: number[]; lien?: boolean }) {
+function Contenu({ m, serie, lien, maj }: { m: Metric; serie?: number[]; lien?: boolean; maj?: boolean }) {
   const a = m as AvecMaj;
   const evolution = serie && serie.length > 1 ? `Évolution sur ${serie.length} mois : de ${formatMetricValue(serie[0], m.unit)} à ${formatMetricValue(serie[serie.length - 1], m.unit)}.` : "";
   return (
     <>
-      <span className="flex items-start justify-between gap-3">
-        <span className="label text-ink-2">{LABEL_METRIC[m.key] ?? m.label}</span>
-        {lien && <ChevronRight size={18} aria-hidden className="shrink-0 text-ink" />}
-      </span>
-      <span className="font-title text-[32px] leading-10 font-bold whitespace-nowrap text-ink">{formatMetricValue(m.value, m.unit)}</span>
-      <Graphique m={m} serie={serie} />
-      {evolution && <span className="sr-only">{evolution}</span>}
-      <span className="text-[12px] leading-4 text-ink-2">
-        {TREND_LABELS[m.trend]}
-        {deltaText(m) ? ` · ${deltaText(m)}` : ""}
-      </span>
-      {a.updated_at && (
-        <span className="border-t border-line pt-2 text-[12px] leading-4 text-ink-2">
-          {texteMaj({ date: a.updated_at, par: a.updated_by_name ?? null })}
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="label truncate text-ink-2">{LABEL_METRIC[m.key] ?? m.label}</span>
+        <span className="text-[12px] leading-4 text-ink-2">
+          {TREND_LABELS[m.trend]}
+          {deltaText(m) ? ` · ${deltaText(m)}` : ""}
         </span>
-      )}
+        {maj && a.updated_at && <span className="text-[12px] leading-4 text-ink-2">{texteMaj({ date: a.updated_at, par: a.updated_by_name ?? null })}</span>}
+      </span>
+      <span className="hidden w-20 shrink-0 min-[420px]:block">
+        <Graphique m={m} serie={serie} />
+      </span>
+      <span className="w-[5.5rem] shrink-0 text-right font-title text-[24px] leading-8 font-bold whitespace-nowrap text-ink">{formatMetricValue(m.value, m.unit)}</span>
+      {lien && <ChevronRight size={16} aria-hidden className="shrink-0 text-ink-2" />}
+      {evolution && <span className="sr-only">{evolution}</span>}
     </>
   );
 }
 
-// Tuile cliquable (tableau de bord, vers la page Indicateurs) ou en lecture seule (aperçu)
-export function MetricTile({ m, serie, lien }: { m: Metric; serie?: number[]; lien?: boolean }) {
+// Ligne compacte : libellé et tendance à gauche, mini-graphique, valeur à droite
+export function MetricTile({ m, serie, lien, maj }: { m: Metric; serie?: number[]; lien?: boolean; maj?: boolean }) {
   if (!lien)
     return (
-      <div className={tuile}>
-        <Contenu m={m} serie={serie} />
+      <div className={ligne}>
+        <Contenu m={m} serie={serie} maj={maj} />
       </div>
     );
   return (
-    <Link to="/indicateurs" className={`${tuile} hover:bg-neutral-1`}>
+    <Link to="/indicateurs" className={`${ligne} hover:bg-neutral-1`}>
       <Contenu m={m} serie={serie} lien />
     </Link>
   );

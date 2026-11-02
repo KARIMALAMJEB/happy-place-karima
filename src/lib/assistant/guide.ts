@@ -33,11 +33,11 @@ export const GUIDE: ArticleGuide[] = [
   {
     id: "g-deposer",
     titre: "Déposer une demande : les champs",
-    motsCles: ["déposer", "créer", "ajouter", "soumettre", "nouvelle demande", "demande", "formulaire", "champs", "bloquante", "thème", "pièce jointe", "pdf", "brouillon"],
+    motsCles: ["idée", "idées", "boîte à idées", "proposer", "suggestion", "déposer", "créer", "ajouter", "soumettre", "nouvelle demande", "demande", "formulaire", "champs", "bloquante", "thème", "pièce jointe", "pdf", "brouillon"],
     profils: "tous",
     page: "deposer",
     texte:
-      "Pour déposer une demande, ouvre « Déposer une demande » depuis l'accueil ou la page Demandes. Le titre (120 caractères au plus) et la description (1 000 caractères au plus, avec mise en forme) sont obligatoires. La nature est obligatoire. BLOQUANTE : tu ne peux pas poursuivre ton travail tant que la demande n'est pas traitée, par exemple pour un accès à un outil indispensable. NON BLOQUANTE : tu peux continuer à travailler en attendant, par exemple pour un équipement de confort ou une amélioration. Le thème est facultatif : Conditions de travail, Cantine, CE, Informatique ou Autre. Choisis ensuite la visibilité et la personne qui valide, deux choix obligatoires. Tu peux joindre des documents : PDF uniquement, 20 Mo au plus par document, 3 fichiers au plus. Le bouton « Enregistrer le brouillon » garde ta saisie pour plus tard. Tant que la demande est en attente, tu peux encore la modifier, sauf la visibilité et la personne qui valide.",
+      "Une demande sert aussi de boîte à idées : tu peux y proposer une idée pour ton équipe ou pour le cabinet, en choisissant la nature NON BLOQUANTE. Pour déposer une demande ou une idée, ouvre « Déposer une demande ou une idée » depuis l'accueil ou la page Demandes. Le titre (120 caractères au plus) et la description (1 000 caractères au plus, avec mise en forme) sont obligatoires. La nature est obligatoire. BLOQUANTE : tu ne peux pas poursuivre ton travail tant que la demande n'est pas traitée, par exemple pour un accès à un outil indispensable. NON BLOQUANTE : tu peux continuer à travailler en attendant, par exemple pour un équipement de confort ou une amélioration. Le thème est facultatif : Conditions de travail, Cantine, CE, Informatique ou Autre. Choisis ensuite la visibilité et la personne qui valide, deux choix obligatoires. Tu peux joindre des documents : PDF uniquement, 20 Mo au plus par document, 3 fichiers au plus. Le bouton « Enregistrer le brouillon » garde ta saisie pour plus tard. Tant que la demande est en attente, tu peux encore la modifier, sauf la visibilité et la personne qui valide.",
   },
   {
     id: "g-visibilite",
@@ -172,7 +172,7 @@ export const GUIDE: ArticleGuide[] = [
     profils: "tous",
     page: "",
     texte:
-      "Tout part de l'accueil. Le bouton « Déposer une demande » ouvre le formulaire ; une fois envoyée, la demande apparaît dans Mes demandes et chez la personne qui valide. Celle-ci l'ouvre depuis « À valider » ou depuis la page Demandes, puis la valide ou la refuse avec un motif. Sans réponse après 5 jours ouvrés, l'auteur peut relancer depuis Mes demandes. La décision part par e-mail à l'auteur en moins de 5 minutes ; avec « À clarifier », l'e-mail et la demande mènent à « Compléter ma demande ». Chaque ligne de demande, sur l'accueil comme sur la page Demandes, ouvre le détail de la demande. Depuis l'accueil, les tuiles d'indicateurs mènent à l'écran Indicateurs et le carrousel aux actualités.",
+      "Tout part de l'accueil. Le bouton « Déposer une demande ou une idée » ouvre le formulaire ; une fois envoyée, la demande apparaît dans Mes demandes et chez la personne qui valide. Celle-ci l'ouvre depuis « À valider » ou depuis la page Demandes, puis la valide ou la refuse avec un motif. Sans réponse après 5 jours ouvrés, l'auteur peut relancer depuis Mes demandes. La décision part par e-mail à l'auteur en moins de 5 minutes ; avec « À clarifier », l'e-mail et la demande mènent à « Compléter ma demande ». Chaque ligne de demande, sur l'accueil comme sur la page Demandes, ouvre le détail de la demande. Depuis l'accueil, les tuiles d'indicateurs mènent à l'écran Indicateurs et le carrousel aux actualités.",
   },
   {
     id: "g-connexion",
