@@ -108,8 +108,26 @@ function Confidentialite() {
               les identités confidentielles. Seuls partent les extraits autorisés par tes droits.
             </p>
             <p>
-              <span className="font-semibold">Sous-traitant.</span> Cloudflare Workers AI, à confirmer avec le contrat de traitement des données
-              et le lieu de traitement avant la mise en ligne.
+              <span className="font-semibold">Base légale.</span> L'intérêt légitime de Bigger Boat à faciliter l'accès à l'information
+              interne. L'usage de l'assistant est facultatif : le reste de Happy Place fonctionne sans lui.
+            </p>
+            <p>
+              <span className="font-semibold">Sous-traitant.</span> Cloudflare, Inc. (service Workers AI), qui rédige la réponse à partir de ta
+              question et des extraits autorisés. Cloudflare indique ne pas utiliser le contenu traité pour entraîner ses modèles et ne pas
+              conserver les questions et les réponses une fois le traitement terminé. Il ne garde que des données techniques (date, volume,
+              code d'état), sans le contenu.
+            </p>
+            <p>
+              <span className="font-semibold">Lieu de traitement et transferts.</span> Cloudflare ne garantit pas que le traitement a lieu dans
+              l'Union européenne : il peut avoir lieu hors de l'Espace économique européen. Ces transferts sont encadrés par l'accord de
+              traitement des données de Cloudflare, qui prévoit les clauses contractuelles types de l'Union européenne et s'appuie sur le cadre
+              de protection des données UE-États-Unis. Pour limiter l'exposition, aucune donnée personnelle n'est envoyée volontairement :
+              les questions qui en contiennent sont refusées avant l'envoi. Les données de Happy Place (demandes, comptes) restent dans la
+              base Supabase hébergée en Irlande.
+            </p>
+            <p>
+              <span className="font-semibold">Sécurité.</span> La clé d'accès au modèle reste côté serveur, jamais dans ton navigateur. Les
+              échanges sont chiffrés (HTTPS). Chaque réponse indique si elle a été générée par IA et cite sa source.
             </p>
             <p>
               <span className="font-semibold">Conservation.</span> Le texte des questions et des réponses n'est pas conservé. Un journal technique
@@ -126,7 +144,7 @@ function Confidentialite() {
               <a href={`mailto:${CONTACT}`} className={lienMail}>
                 {CONTACT}
               </a>{" "}
-              (adresse fictive).
+              (adresse fictive). Tu peux aussi adresser une réclamation à la CNIL.
             </p>
           </Bloc>
 

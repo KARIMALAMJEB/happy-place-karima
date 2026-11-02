@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 import { deltaText, formatMetricValue, TREND_LABELS, type Metric } from "@/lib/dashboard";
 
-export const LABEL_METRIC: Record<string, string> = { training_kpi: "Taux de placement", active_users: "Missions actives" };
+export const LABEL_METRIC: Record<string, string> = {};
 
 const tuile = "flex flex-1 items-center justify-between gap-4 border border-line bg-white px-5 py-4";
 
