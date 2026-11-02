@@ -163,7 +163,7 @@ export const GUIDE: ArticleGuide[] = [
     profils: "tous",
     page: "annuaire",
     texte:
-      "L'Annuaire sert à trouver la bonne personne et son équipe. Il propose deux affichages : l'organigramme, avec la Direction Générale puis une carte par équipe où le manager est mis en avant, et la liste, avec le nom, le rôle, l'équipe et un bouton « Envoyer un e-mail ». Quand un manager a sa fiche dans une autre équipe, la carte de l'équipe qu'il gère le rappelle sans dupliquer sa fiche. Le champ de recherche accepte un nom, une équipe ou un rôle. Dans la démo (fictif), les personnes et les adresses e-mail sont fictives.",
+      "L'Annuaire sert à trouver la bonne personne et son équipe. Il propose deux affichages : l'organigramme, avec la carte Administration (les admins) puis une carte par équipe où le manager est mis en avant, et la liste, avec le nom, le rôle, l'équipe et un bouton « Envoyer un e-mail ». Quand un manager a sa fiche dans une autre équipe, la carte de l'équipe qu'il gère le rappelle sans dupliquer sa fiche. Le champ de recherche accepte un nom, une équipe ou un rôle. Dans la démo (fictif), les personnes et les adresses e-mail sont fictives.",
   },
   {
     id: "g-parcours",

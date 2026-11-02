@@ -169,8 +169,8 @@ function Page() {
                 </p>
               </div>
             </div>
-            <Link to="/annuaire" hash="equipe-support-et-moyens-generaux" className={TEXT_LINK}>
-              Voir l'équipe Support et moyens généraux dans l'Annuaire
+            <Link to="/annuaire" className={TEXT_LINK}>
+              Trouver la bonne personne dans l'Annuaire
             </Link>
           </div>
           {assistance.length > 0 && <ul className="grid gap-4 md:grid-cols-2">{assistance.map(carte)}</ul>}
