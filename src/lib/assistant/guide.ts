@@ -64,7 +64,7 @@ export const GUIDE: ArticleGuide[] = [
     profils: "tous",
     page: "demandes",
     texte:
-      "Après l'envoi, ta demande passe à l'état En attente et la personne qui valide la reçoit. Elle prend ensuite une décision : Validée, Refusée ou À compléter. Tu es prévenu par e-mail en moins de 5 minutes, avec le motif et l'explication en cas de refus. Dans la démo (fictif), les e-mails sont simulés : un message s'affiche à l'écran à chaque envoi. Tu suis tes demandes dans Mes demandes, avec des filtres par statut ; sur l'accueil, les onglets En cours, Réponses reçues et Terminées les regroupent, et une réponse non lue est signalée par le libellé « Réponse non lue ». Pour une demande bloquante, le suivi du blocage n'apparaît qu'après la validation : OUVERT, EN COURS puis RÉSOLU, sans passage direct d'OUVERT à RÉSOLU.",
+      "Après l'envoi, ta demande passe à l'état En attente et la personne qui valide la reçoit. Elle prend ensuite une décision : Validée, Refusée ou À compléter. Tu es prévenu par e-mail en moins de 5 minutes, avec le motif et l'explication en cas de refus. Tu suis tes demandes dans Mes demandes, avec des filtres par statut ; sur l'accueil, les onglets En cours, Réponses reçues et Terminées les regroupent, et une réponse non lue est signalée par le libellé « Réponse non lue ». Pour une demande bloquante, le suivi du blocage n'apparaît qu'après la validation : OUVERT, EN COURS puis RÉSOLU, sans passage direct d'OUVERT à RÉSOLU.",
   },
   {
     id: "g-refus",
@@ -141,11 +141,11 @@ export const GUIDE: ArticleGuide[] = [
   {
     id: "g-indicateurs",
     titre: "Les indicateurs",
-    motsCles: ["indicateurs", "indicateur", "effectif", "mandats", "objectif", "mise à jour", "saisie", "performance"],
+    motsCles: ["indicateurs", "indicateur", "effectif", "mandats", "postes", "placement", "recrutement", "acceptation", "publier", "publié", "mise à jour", "saisie", "performance"],
     profils: "tous",
     page: "indicateurs",
     texte:
-      "Les indicateurs montrent la performance de l'entreprise. Trois indicateurs sont affichés : Effectif, Mandats actifs et Objectif annuel atteint, chacun avec sa valeur, son unité et sa période. Ils sont saisis à la main par l'admin, dans l'écran Indicateurs, et s'affichent sur le tableau de bord de tous les collaborateurs ; les tuiles de l'accueil mènent à cet écran. La mention « Mis à jour le … par … », sous « Indicateurs clés », donne la date de la dernière saisie et la personne qui l'a faite. Si cette date dépasse 30 jours, l'admin voit le repère « Mise à jour à faire ». L'admin peut ajouter ou supprimer un indicateur, puis cliquer sur « Enregistrer et publier » ; un aperçu montre le rendu côté collaborateur.",
+      "Les indicateurs montrent la performance du cabinet de recrutement : effectif, mandats actifs, postes ouverts, taux de placement, délai moyen de recrutement et taux d'acceptation. Chaque indicateur affiche sa valeur, sa tendance et son évolution sur six mois (courbe, barres ou jauge selon l'unité), avec la mention « Mis à jour le … par … » qui donne la date de la dernière saisie et la personne qui l'a faite. Les indicateurs sont saisis à la main par l'admin dans l'écran Indicateurs. L'admin y voit tous les indicateurs et coche la case « Publié » de ceux qu'il veut montrer : seuls les indicateurs publiés (six au plus) s'affichent sur le tableau de bord de chaque personne, et les tuiles de l'accueil mènent à cet écran. L'admin peut aussi ajouter ou supprimer un indicateur, puis cliquer sur « Enregistrer » ; un aperçu montre le rendu côté collaborateur.",
   },
   {
     id: "g-outils",
