@@ -27,7 +27,7 @@ export type Perspective = "auteur" | "valideur" | "lecteur";
 
 // Grille du prototype : Demande | Visibilité | Déposée le | Statut et nature | Action
 const GRILLE =
-  "grid min-w-[640px] grid-cols-[minmax(0,1fr)_176px_88px_120px_128px] gap-x-2 @min-[820px]:grid-cols-[minmax(0,1fr)_176px_104px_152px_200px] @min-[820px]:gap-x-4";
+  "grid min-w-[760px] grid-cols-[minmax(0,1fr)_176px_88px_120px_128px] gap-x-2 @min-[820px]:grid-cols-[minmax(0,1fr)_176px_104px_152px_200px] @min-[820px]:gap-x-4";
 
 const Info = ({ children }: { children: React.ReactNode }) => <span className="text-[12px] leading-4 text-ink-2">{children}</span>;
 const LIEN = "relative z-10 text-[14px] leading-5 font-semibold text-ink underline underline-offset-4 hover:text-anthracite";
