@@ -12,12 +12,12 @@ import { BlocLecture, BlocStatuts } from "@/components/hp/demandes-blocs";
 import { Encadre, Picto } from "@/components/hp/encadre";
 import { HpPage, useOwnProfile } from "@/components/hp/page";
 import { RecapTuiles, buildTuiles } from "@/components/hp/recap";
-import { MetricTile, dateMaj, derniereMaj } from "@/components/hp/indicateurs";
+import { MetricTile, derniereMajPar, texteMaj } from "@/components/hp/indicateurs";
 import { Couverture, dateCourte, estEntreprise, imagesDe, libellePerimetre, signature } from "@/components/hp/news-shared";
 import { TraitStatut } from "@/components/hp/statut";
 import { TabButton, TabList } from "@/components/hp/tabs";
 import {
-  deleteDraftNews, exportMyRecentSubmissions, fetchMetrics, fetchNews,
+  deleteDraftNews, exportMyRecentSubmissions, fetchMetrics, fetchMetricsHistory, fetchNews,
   publishDraftNews, requestNewsAuthorization, type News,
 } from "@/lib/dashboard";
 import { fetchAllRequests, fetchMyRequests, fetchToReview, fetchValidatedRequests } from "@/lib/requests";
@@ -291,17 +291,18 @@ function Carrousel({ news, loading, error, equipe, className }: { news: News[]; 
 }
 
 function Indicateurs({ metrics, error }: { metrics?: Awaited<ReturnType<typeof fetchMetrics>>; error: boolean }) {
-  const liste = useMemo(() => (metrics ?? []).slice(0, 4), [metrics]);
-  const maj = derniereMaj(metrics ?? []);
+  const liste = useMemo(() => (metrics ?? []).filter((m) => m.published !== false).slice(0, 6), [metrics]);
+  const maj = derniereMajPar(liste);
+  const series = useQuery({ queryKey: ["metrics-history"], queryFn: fetchMetricsHistory, retry: false });
   return (
-    <Encadre id="indicateurs" icon={TrendingUp} title="Indicateurs clés" subtitle={<>Performance de l'entreprise{maj && <span className="block">Mis à jour le {dateMaj(maj)}</span>}</>}>
+    <Encadre id="indicateurs" icon={TrendingUp} title="Indicateurs clés" subtitle={<>Performance de l'entreprise{maj && <span className="block">{texteMaj(maj)}</span>}</>}>
       {error ? (
         <p role="alert" className="px-6 py-6">Les indicateurs sont indisponibles.</p>
       ) : liste.length === 0 ? (
         <p className="px-6 py-6 text-[14px] leading-5 text-ink-2">Aucun indicateur.</p>
       ) : (
         <div className="flex flex-1 flex-col gap-3 p-6">
-          {liste.map((m) => <MetricTile key={m.key} m={m} lien />)}
+          {liste.map((m) => <MetricTile key={m.key} m={m} serie={series.data?.[m.key]} lien />)}
         </div>
       )}
     </Encadre>

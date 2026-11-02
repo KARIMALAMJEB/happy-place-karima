@@ -5,22 +5,22 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { HpButton, HpIconButton, hpButtonVariants } from "@/components/hp/button";
 import { Encadre } from "@/components/hp/encadre";
-import { LABEL_METRIC, MetricTile, dateMaj, derniereMaj } from "@/components/hp/indicateurs";
+import { LABEL_METRIC, MetricTile, derniereMajPar, texteMaj } from "@/components/hp/indicateurs";
 import { HpPage } from "@/components/hp/page";
-import { createMetric, deleteMetric, fetchMetrics, updateMetricRow, type Metric } from "@/lib/dashboard";
+import { createMetric, deleteMetric, fetchMetrics, fetchMetricsHistory, updateMetricRow, type Metric } from "@/lib/dashboard";
 
 export const Route = createFileRoute("/_authenticated/indicateurs")({
   head: () => ({ meta: [{ title: "Happy Place — Indicateurs" }] }),
   component: Indicateurs,
 });
 
-type Ligne = { cle: string; libelle: string; valeur: string; unite: string };
-const CHAMPS: { cle: keyof Omit<Ligne, "cle">; label: string; largeur: string }[] = [
+type Ligne = { cle: string; libelle: string; valeur: string; unite: string; publie: boolean };
+const CHAMPS: { cle: "libelle" | "valeur" | "unite"; label: string; largeur: string }[] = [
   { cle: "libelle", label: "Libellé", largeur: "w-[44%]" },
   { cle: "valeur", label: "Valeur", largeur: "w-[22%]" },
   { cle: "unite", label: "Unité", largeur: "w-[22%]" },
 ];
-const versLignes = (l: Metric[]): Ligne[] => l.map((m) => ({ cle: m.key, libelle: LABEL_METRIC[m.key] ?? m.label, valeur: String(m.value).replace(".", ","), unite: m.unit ?? "" }));
+const versLignes = (l: Metric[]): Ligne[] => l.map((m) => ({ cle: m.key, libelle: LABEL_METRIC[m.key] ?? m.label, valeur: String(m.value).replace(".", ","), unite: m.unit ?? "", publie: m.published !== false }));
 const nombre = (v: string) => Number(v.trim().replace(",", ".").replace(/\s/g, ""));
 const valides = (l: Ligne[]) => l.filter((x) => x.libelle.trim() && x.valeur.trim() && Number.isFinite(nombre(x.valeur)));
 const slug = (s: string) => s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "").slice(0, 40) || `indicateur_${Date.now()}`;
@@ -39,12 +39,14 @@ function Page() {
   const metrics = useQuery({ queryKey: ["metrics"], queryFn: fetchMetrics, retry: false });
   const liste = metrics.data ?? [];
   const editable = role === "admin";
-  const maj = derniereMaj(liste);
+  const maj = derniereMajPar(liste);
+  const series = useQuery({ queryKey: ["metrics-history"], queryFn: fetchMetricsHistory, retry: false });
+  const basculer = (i: number) => setBrouillon((b) => b.map((x, k) => (k === i ? { ...x, publie: !x.publie } : x)));
   const [brouillon, setBrouillon] = useState<Ligne[]>([]);
   const ref = JSON.stringify(versLignes(liste));
   useEffect(() => { setBrouillon(versLignes(liste)); }, [ref]); // eslint-disable-line react-hooks/exhaustive-deps
   const modifie = JSON.stringify(brouillon) !== ref;
-  const changer = (i: number, cle: keyof Ligne, valeur: string) => setBrouillon((b) => b.map((x, k) => (k === i ? { ...x, [cle]: valeur } : x)));
+  const changer = (i: number, cle: "libelle" | "valeur" | "unite", valeur: string) => setBrouillon((b) => b.map((x, k) => (k === i ? { ...x, [cle]: valeur } : x)));
 
   const publier = useMutation({
     mutationFn: async () => {
@@ -53,10 +55,10 @@ function Page() {
       for (const m of liste) if (!gardees.has(m.key)) await deleteMetric(m.key);
       const utilisees = new Set(liste.map((m) => m.key));
       for (const x of lignes) {
-        const input = { key: x.cle || slug(x.libelle), label: x.libelle.trim(), value: nombre(x.valeur), unit: x.unite.trim() || null };
+        const input = { key: x.cle || slug(x.libelle), label: x.libelle.trim(), value: nombre(x.valeur), unit: x.unite.trim() || null, published: x.publie };
         if (x.cle && utilisees.has(x.cle)) {
           const avant = liste.find((m) => m.key === x.cle)!;
-          if (versLignes([avant])[0].libelle !== x.libelle || Number(avant.value) !== input.value || (avant.unit ?? "") !== x.unite.trim()) await updateMetricRow(x.cle, input);
+          if (versLignes([avant])[0].libelle !== x.libelle || Number(avant.value) !== input.value || (avant.unit ?? "") !== x.unite.trim() || (avant.published !== false) !== x.publie) await updateMetricRow(x.cle, input);
         } else {
           let key = input.key;
           while (utilisees.has(key)) key = `${key}_2`;
@@ -65,14 +67,14 @@ function Page() {
         }
       }
     },
-    onSuccess: () => { toast.success("Indicateurs publiés"); qc.invalidateQueries({ queryKey: ["metrics"] }); },
+    onSuccess: () => { toast.success("Indicateurs enregistrés"); qc.invalidateQueries({ queryKey: ["metrics"] }); qc.invalidateQueries({ queryKey: ["metrics-history"] }); },
     onError: (e) => toast.error(e instanceof Error ? e.message : "La publication a échoué"),
   });
 
   const apercu: Metric[] = editable
-    ? valides(brouillon).map((x, i) => {
+    ? valides(brouillon).filter((x) => x.publie).map((x, i) => {
         const base = liste.find((m) => m.key === x.cle);
-        return { key: x.cle || `nouveau-${i}`, label: x.libelle, value: nombre(x.valeur), unit: x.unite.trim() || null, trend: base?.trend ?? "stable", previous_value: base?.previous_value ?? null, delta: base?.delta ?? null } as Metric;
+        return { key: x.cle || `nouveau-${i}`, label: x.libelle, value: nombre(x.valeur), unit: x.unite.trim() || null, trend: base?.trend ?? "stable", previous_value: base?.previous_value ?? null, delta: base?.delta ?? null, updated_at: (base as Metric & { updated_at?: string })?.updated_at, updated_by_name: base?.updated_by_name } as Metric;
       })
     : liste;
 
@@ -86,7 +88,7 @@ function Page() {
       </div>
       <header className="flex flex-col gap-2 border border-line bg-white px-8 py-6">
         <h1 className="text-[36px] leading-[44px]">Indicateurs de performance de l'entreprise</h1>
-        <p className="text-[16px] leading-6">Ces indicateurs sont saisis à la main par l'admin. Ils s'affichent sur le tableau de bord de tous les collaborateurs.</p>
+        <p className="text-[16px] leading-6">Ces indicateurs sont saisis à la main par l'admin. Seuls ceux dont la case « Publié » est cochée s'affichent sur le tableau de bord de chaque personne.</p>
       </header>
 
       {metrics.isError ? (
@@ -101,6 +103,7 @@ function Page() {
                     {CHAMPS.map((c) => (
                       <th key={c.cle} scope="col" className={`label h-11 px-3 text-ink-2 first:pl-6 ${c.largeur}`}>{c.label}</th>
                     ))}
+                    <th scope="col" className="label h-11 px-3 text-center text-ink-2">Publié</th>
                     <th scope="col" className="label h-11 pr-6 text-right text-ink-2"><span className="sr-only">Supprimer</span></th>
                   </tr>
                 </thead>
@@ -118,6 +121,15 @@ function Page() {
                           />
                         </td>
                       ))}
+                      <td className="px-3 py-3 text-center">
+                        <input
+                          type="checkbox"
+                          checked={x.publie}
+                          onChange={() => basculer(i)}
+                          aria-label={`Publier l'indicateur ${x.libelle || i + 1} sur le tableau de bord`}
+                          className="h-6 w-6 accent-[#28282D]"
+                        />
+                      </td>
                       <td className="py-3 pr-6 text-right">
                         <HpIconButton icon={Trash2} label={`Supprimer l'indicateur ${x.libelle || i + 1}`} onClick={() => setBrouillon((b) => b.filter((_, k) => k !== i))} />
                       </td>
@@ -126,14 +138,14 @@ function Page() {
                 </tbody>
               </table>
               <div className="flex px-6 py-4">
-                <HpButton role="modifie" icon={Plus} onClick={() => setBrouillon((b) => [...b, { cle: "", libelle: "", valeur: "", unite: "" }])}>AJOUTER UN INDICATEUR</HpButton>
+                <HpButton role="modifie" icon={Plus} onClick={() => setBrouillon((b) => [...b, { cle: "", libelle: "", valeur: "", unite: "", publie: false }])}>AJOUTER UN INDICATEUR</HpButton>
               </div>
               <div className="flex items-center justify-between gap-4 border-t border-line px-6 py-4">
-                <p className="text-[12px] leading-4 text-ink-2">{maj ? `Mis à jour le ${dateMaj(maj)}` : "Jamais mis à jour"}</p>
+                <p className="text-[12px] leading-4 text-ink-2">{maj ? texteMaj(maj) : "Jamais mis à jour"}</p>
                 <div className="flex items-center gap-3">
                   {!modifie && <span className="text-[12px] leading-4 text-ink-2">Aucune modification à publier</span>}
                   <HpButton role="consulte" disabled={!modifie} onClick={() => setBrouillon(versLignes(liste))}>ANNULER</HpButton>
-                  <HpButton role="modifie" icon={Check} disabled={!modifie || publier.isPending} onClick={() => publier.mutate()}>ENREGISTRER ET PUBLIER</HpButton>
+                  <HpButton role="modifie" icon={Check} disabled={!modifie || publier.isPending} onClick={() => publier.mutate()}>ENREGISTRER</HpButton>
                 </div>
               </div>
             </Encadre>
@@ -146,10 +158,10 @@ function Page() {
               <p className="px-6 py-6 text-[14px] leading-5 text-ink-2">Aucun indicateur.</p>
             ) : (
               <div className="flex flex-col gap-3 p-6" aria-live="polite">
-                {apercu.map((m) => <MetricTile key={m.key} m={m} />)}
+                {apercu.map((m) => <MetricTile key={m.key} m={m} serie={series.data?.[m.key]} />)}
               </div>
             )}
-            {!editable && maj && <p className="border-t border-line px-6 py-4 text-[12px] leading-4 text-ink-2">Mis à jour le {dateMaj(maj)}</p>}
+            {!editable && maj && <p className="border-t border-line px-6 py-4 text-[12px] leading-4 text-ink-2">{texteMaj(maj)}</p>}
           </Encadre>
         </div>
       )}

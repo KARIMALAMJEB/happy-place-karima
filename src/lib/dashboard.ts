@@ -73,6 +73,11 @@ export type Metric = {
   trend: "hausse" | "baisse" | "stable";
   previous_value: number | null;
   delta: number | string | null;
+  published?: boolean;
+  updated_at?: string;
+  updated_by_name?: string | null;
+  source?: string | null;
+  definition?: string | null;
 };
 
 export const TREND_LABELS: Record<Metric["trend"], string> = {
@@ -409,6 +414,7 @@ export type MetricInput = {
   label: string;
   value: number;
   unit: string | null;
+  published?: boolean;
 };
 
 export async function fetchAllNews(): Promise<News[]> {
@@ -542,14 +548,15 @@ export async function deleteBlocker(id: string) {
 }
 
 export async function createMetric(input: MetricInput) {
-  const { error } = await db.from("metrics").insert(input);
+  // `published`, `source` et `definition` sont des colonnes ajoutées par la migration 20261102100000
+  const { error } = await db.from("metrics").insert(input as never);
   if (error) throw error;
 }
 
 export async function updateMetricRow(key: string, input: MetricInput) {
   const { error } = await db
     .from("metrics")
-    .update({ ...input, updated_at: new Date().toISOString() })
+    .update({ ...input, updated_at: new Date().toISOString() } as never)
     .eq("key", key);
   if (error) throw error;
 }
@@ -583,6 +590,18 @@ export async function fetchSubmissionHistory(submissionId: string): Promise<Subm
 }
 
 export type MetricHistoryPoint = { id: string; metric_key: string; value: number; recorded_at: string };
+
+/** Historique de tous les indicateurs visibles (la base filtre selon les droits), du plus ancien au plus récent, par clé. */
+export async function fetchMetricsHistory(): Promise<Record<string, number[]>> {
+  const { data, error } = await supabase
+    .from("metrics_history")
+    .select("metric_key, value, recorded_at")
+    .order("recorded_at", { ascending: true });
+  if (error) throw error;
+  const out: Record<string, number[]> = {};
+  for (const r of data ?? []) (out[r.metric_key] ??= []).push(Number(r.value));
+  return out;
+}
 
 export async function fetchMetricHistory(key: string): Promise<MetricHistoryPoint[]> {
   const { data, error } = await supabase
