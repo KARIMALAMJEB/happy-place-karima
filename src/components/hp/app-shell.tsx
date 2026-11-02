@@ -162,7 +162,7 @@ function Header({ name, role, sousTitre, menuOuvert, onMenu }: { name: string; r
         >
           MENU
         </HpButton>
-        <span className="flex items-center gap-3"><span aria-hidden className="hidden h-6 w-1 bg-[#C99695] lg:block" /><span className="font-title text-[18px] leading-6 font-bold tracking-tight text-ink">Happy Place</span><span className="label hidden text-ink-2 xl:inline">V2</span></span>
+        <span className="flex items-center gap-3"><span aria-hidden className="hidden h-6 w-1 bg-anthracite lg:block" /><span className="font-title text-[18px] leading-6 font-bold tracking-tight text-ink">Happy Place</span><span className="label hidden text-ink-2 xl:inline">V2</span></span>
         <RechercheGlobale role={role} equipe={sousTitre} />
       </div>
       <div className="flex items-center gap-4">

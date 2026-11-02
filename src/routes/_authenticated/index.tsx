@@ -92,7 +92,7 @@ function Accueil() {
       <div className="flex flex-col gap-6 font-body text-ink">
         {email && <DepartureNotices email={email} />}
 
-        <section className="flex flex-col gap-6 border border-line bg-gradient-to-br from-[#FBF6EE] to-white px-6 py-8 lg:px-10 lg:py-10">
+        <section className="flex flex-col gap-6 border border-line border-l-4 border-l-anthracite bg-white px-6 py-8 lg:px-10 lg:py-10">
           <div className="flex flex-col gap-8 lg:flex-row lg:items-stretch lg:justify-between">
             <div className="flex flex-col justify-between gap-6">
               <div className="flex flex-col gap-3">
@@ -119,11 +119,11 @@ function Accueil() {
                 <span className="font-title text-[44px] leading-[48px] font-bold">{new Intl.DateTimeFormat("fr-FR", { day: "numeric", timeZone: "Europe/Paris" }).format(new Date())}</span>
                 <span className="text-[12px] leading-4 capitalize text-on-anthracite/80">{new Intl.DateTimeFormat("fr-FR", { weekday: "long", timeZone: "Europe/Paris" }).format(new Date())}</span>
               </div>
-              <div className="flex min-h-32 flex-col items-center justify-center gap-1 bg-[#F8E9DB] px-2 py-4 text-center">
+              <div className="flex min-h-32 flex-col items-center justify-center gap-1 border border-line bg-neutral-1 px-2 py-4 text-center">
                 <span className="label text-ink-2">Équipe</span>
                 <span className="font-title text-[18px] leading-6 font-bold text-ink">{team ?? "Toutes"}</span>
               </div>
-              <div className="flex min-h-32 flex-col items-center justify-center gap-1 bg-[#F8E9DB] px-2 py-4 text-center">
+              <div className="flex min-h-32 flex-col items-center justify-center gap-1 border border-line bg-neutral-1 px-2 py-4 text-center">
                 <span className="label text-ink-2">Profil</span>
                 <span className="font-title text-[18px] leading-6 font-bold text-ink">{roleLabel.charAt(0) + roleLabel.slice(1).toLowerCase()}</span>
               </div>
@@ -136,7 +136,7 @@ function Accueil() {
           }} />
         </section>
 
-        <nav aria-label="Accès rapides" className="flex flex-col gap-4 border border-line bg-white px-6 py-6 lg:px-10">
+        <nav aria-label="Accès rapides" className="flex flex-col gap-4 border border-line border-l-4 border-l-anthracite bg-white px-6 py-6 lg:px-10">
           <h2 className="text-[22px] leading-7">Accès rapides</h2>
           <ul className="grid grid-cols-3 gap-4 lg:grid-cols-6">
             {([
@@ -148,8 +148,8 @@ function Accueil() {
               { to: "/deposer", l: "Idée", i: Lightbulb },
             ] as const).map(({ to, l, i: Ico }) => (
               <li key={to}>
-                <Link to={to} className="group flex min-h-24 flex-col items-center justify-center gap-2 px-2 py-3 text-center hover:bg-neutral-1">
-                  <span aria-hidden className="flex size-12 items-center justify-center rounded-full bg-[#F8E9DB] group-hover:bg-white"><Ico size={22} className="text-anthracite" /></span>
+                <Link to={to} className="flex min-h-24 flex-col items-center justify-center gap-2 border border-line px-2 py-3 text-center hover:bg-neutral-1">
+                  <Picto icon={Ico} />
                   <span className="label text-anthracite">{l}</span>
                 </Link>
               </li>
