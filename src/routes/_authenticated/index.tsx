@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BookOpen, ChevronLeft, ChevronRight, ClipboardList, Download, FileText, Image as ImageIcon,
-  ArrowRight, Newspaper, Pause, PenLine, Play, Plus, Send, TrendingUp, Wrench,
+  ArrowRight, Contact, Lightbulb, Newspaper, Pause, PenLine, Play, Plus, Send, TrendingUp, Wrench,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -46,7 +46,6 @@ function Accueil() {
   const myEmail = (email ?? "").toLowerCase();
   const peutRediger = role !== "collaborateur";
   const roleLabel = role === "admin" ? "ADMIN" : role === "manager" ? "MANAGER" : "COLLABORATEUR";
-  const today = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Paris" }).format(new Date());
   const onError = (e: unknown) => toast.error(e instanceof Error ? e.message : "L'action a échoué");
 
   const mes = useQuery({ queryKey: ["requests", "mine", myEmail], enabled: !!myEmail, queryFn: () => fetchMyRequests(myEmail) });
@@ -93,26 +92,41 @@ function Accueil() {
       <div className="flex flex-col gap-6 font-body text-ink">
         {email && <DepartureNotices email={email} />}
 
-        <section className="relative flex flex-col gap-6 overflow-hidden border border-line bg-gradient-to-br from-[#F5D5D4] via-[#F8E3D8] to-[#F0D0BC] px-6 py-8 lg:px-10 lg:py-10">
-          <span aria-hidden className="absolute inset-x-0 top-0 flex h-1.5"><span className="flex-1 bg-anthracite" /><span className="w-1/4 bg-[#C99695]" /><span className="w-1/6 bg-[#F0D0BC]" /></span>
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div className="flex flex-col gap-3">
-              <p className="text-[14px] leading-5 text-anthracite"><span className="label">{team ?? roleLabel}</span> · <time>{today}</time></p>
-              <h1 className="text-[36px] leading-[42px] lg:text-[52px] lg:leading-[58px]">Bonjour {firstName}</h1>
-              <p className="max-w-[52ch] text-[16px] leading-6 text-anthracite/80">Ton point de pilotage chez Bigger Boat : les actualités, les demandes et idées du terrain, les points bloquants et les chiffres clés.</p>
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              {peutRediger && (
-                <Link to="/rediger" className="label-13 inline-flex h-11 items-center gap-2 px-1 text-anthracite underline underline-offset-4 hover:text-ink">
-                  <PenLine size={16} aria-hidden /> {role === "admin" ? "Publier une annonce entreprise" : "Rédiger une actualité"}
+        <section className="flex flex-col gap-6 border border-line bg-gradient-to-br from-[#FBF6EE] to-white px-6 py-8 lg:px-10 lg:py-10">
+          <div className="flex flex-col gap-8 lg:flex-row lg:items-stretch lg:justify-between">
+            <div className="flex flex-col justify-between gap-6">
+              <div className="flex flex-col gap-3">
+                <h1 className="text-[36px] leading-[42px] lg:text-[52px] lg:leading-[58px]">Bonjour {firstName}</h1>
+                <p className="max-w-[52ch] text-[16px] leading-6 text-ink-2">Bienvenue sur Happy Place, ton point de pilotage : actualités, demandes et idées, points bloquants et chiffres clés au même endroit.</p>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                {peutRediger && (
+                  <Link to="/rediger" className="label-13 inline-flex h-11 items-center gap-2 px-1 text-anthracite underline underline-offset-4 hover:text-ink">
+                    <PenLine size={16} aria-hidden /> {role === "admin" ? "Publier une annonce entreprise" : "Rédiger une actualité"}
+                  </Link>
+                )}
+                <Link to="/deposer" className="contents">
+                  <HpButton role="publie" icon={Plus}>DÉPOSER UNE DEMANDE OU UNE IDÉE</HpButton>
                 </Link>
-              )}
-              <Link to="/deposer" className="contents">
-                <HpButton role="publie" icon={Plus}>DÉPOSER UNE DEMANDE OU UNE IDÉE</HpButton>
-              </Link>
-              <HpButton role="consulte" icon={Download} disabled={exportReport.isPending} onClick={() => exportReport.mutate()}>
-                {exportReport.isPending ? "EXPORT EN COURS…" : "EXPORTER LE RAPPORT"}
-              </HpButton>
+                <HpButton role="consulte" icon={Download} disabled={exportReport.isPending} onClick={() => exportReport.mutate()}>
+                  {exportReport.isPending ? "EXPORT EN COURS…" : "EXPORTER LE RAPPORT"}
+                </HpButton>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3 lg:w-[26rem] lg:shrink-0">
+              <div className="flex min-h-32 flex-col items-center justify-center gap-1 bg-anthracite px-2 py-4 text-center text-on-anthracite">
+                <span className="label text-on-anthracite/80">{new Intl.DateTimeFormat("fr-FR", { month: "long", timeZone: "Europe/Paris" }).format(new Date())}</span>
+                <span className="font-title text-[44px] leading-[48px] font-bold">{new Intl.DateTimeFormat("fr-FR", { day: "numeric", timeZone: "Europe/Paris" }).format(new Date())}</span>
+                <span className="text-[12px] leading-4 capitalize text-on-anthracite/80">{new Intl.DateTimeFormat("fr-FR", { weekday: "long", timeZone: "Europe/Paris" }).format(new Date())}</span>
+              </div>
+              <div className="flex min-h-32 flex-col items-center justify-center gap-1 bg-[#F8E9DB] px-2 py-4 text-center">
+                <span className="label text-ink-2">Équipe</span>
+                <span className="font-title text-[18px] leading-6 font-bold text-ink">{team ?? "Toutes"}</span>
+              </div>
+              <div className="flex min-h-32 flex-col items-center justify-center gap-1 bg-[#F8E9DB] px-2 py-4 text-center">
+                <span className="label text-ink-2">Profil</span>
+                <span className="font-title text-[18px] leading-6 font-bold text-ink">{roleLabel.charAt(0) + roleLabel.slice(1).toLowerCase()}</span>
+              </div>
             </div>
           </div>
           <RecapTuiles tuiles={tuiles} actif={tuile} onChoisir={(t) => {
@@ -121,6 +135,27 @@ function Accueil() {
             if (t) requestAnimationFrame(() => document.getElementById(t.onglet === "mes" ? "mes-demandes" : "a-valider")?.scrollIntoView({ block: "start", behavior: "smooth" }));
           }} />
         </section>
+
+        <nav aria-label="Accès rapides" className="flex flex-col gap-4 border border-line bg-white px-6 py-6 lg:px-10">
+          <h2 className="text-[22px] leading-7">Accès rapides</h2>
+          <ul className="grid grid-cols-3 gap-4 lg:grid-cols-6">
+            {([
+              { to: "/actualites", l: "Actualités", i: Newspaper },
+              { to: "/demandes", l: "Demandes", i: ClipboardList },
+              { to: "/indicateurs", l: "Indicateurs", i: TrendingUp },
+              { to: "/boite-a-outils", l: "Boîte à outils", i: Wrench },
+              { to: "/annuaire", l: "Annuaire", i: Contact },
+              { to: "/deposer", l: "Idée", i: Lightbulb },
+            ] as const).map(({ to, l, i: Ico }) => (
+              <li key={to}>
+                <Link to={to} className="group flex min-h-24 flex-col items-center justify-center gap-2 px-2 py-3 text-center hover:bg-neutral-1">
+                  <span aria-hidden className="flex size-12 items-center justify-center rounded-full bg-[#F8E9DB] group-hover:bg-white"><Ico size={22} className="text-anthracite" /></span>
+                  <span className="label text-anthracite">{l}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
 
         <div className="grid items-stretch gap-6 lg:grid-cols-3">
           <Carrousel className="lg:col-span-2" news={publiees} loading={news.isLoading} error={news.isError} equipe={team} />
