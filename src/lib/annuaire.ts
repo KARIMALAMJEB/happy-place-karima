@@ -1,5 +1,5 @@
-// Annuaire de démonstration (repris du prototype) : personnes et équipes fictives de Bigger Boat.
-// Données statiques : l'annuaire n'est pas encore branché sur la base (voir Journal des modifications V2).
+// Annuaire de démonstration : personnes et équipes fictives de Bigger Boat, alignées sur les comptes de la base (liste blanche, rôles, équipes gérées).
+// Données statiques : l'annuaire n'est pas encore branché sur la base. À mettre à jour à la main quand les comptes changent.
 
 export type RoleAnnuaire = "Collaborateur" | "Manager" | "Admin";
 export type Personne = {
@@ -10,22 +10,26 @@ export type Personne = {
   equipesGerees?: string[]; // équipes encadrées par un manager
 };
 
-export const DIRECTION = "Direction Générale";
-export const EQUIPES = ["Direction Conseil", "Direction Commerciale", "People", "Support et moyens généraux", DIRECTION];
+export const DIRECTION = "Administration";
+export const EQUIPES = ["Direction Commerciale", "Finance", "Marketing", "People", "Pôle Data et IA", "Product", DIRECTION];
 
 export const PERSONNES: Personne[] = [
-  { nom: "Kesha Diallo", equipe: "Direction Conseil", role: "Manager", equipesGerees: ["Direction Conseil", "Direction Commerciale"] },
-  { nom: "Gontran Lefèvre", equipe: "Direction Conseil", role: "Collaborateur" },
-  { nom: "Lina Moreau", equipe: "Direction Conseil", role: "Collaborateur" },
-  { nom: "Julien Roche", equipe: "Direction Conseil", role: "Collaborateur" },
-  { nom: "Inès Garnier", equipe: "Direction Commerciale", role: "Collaborateur" },
-  { nom: "Hugo Martin", equipe: "Direction Commerciale", role: "Collaborateur" },
-  { nom: "Chloé Lambert", equipe: "Direction Commerciale", role: "Collaborateur" },
-  { nom: "Olivia Brun", equipe: "People", role: "Admin" },
-  { nom: "Maëlle Fontaine", equipe: "People", role: "Collaborateur" },
-  { nom: "Samir Haddad", equipe: "Support et moyens généraux", role: "Manager", priseEnCharge: true },
-  { nom: "Yanis Okafor", equipe: "Support et moyens généraux", role: "Collaborateur", priseEnCharge: true },
-  { nom: "Arnaud Vidal", equipe: "Direction Générale", role: "Manager" },
+  { nom: "Olivia Brun", equipe: DIRECTION, role: "Admin" },
+  { nom: "Claire Vasseur", equipe: DIRECTION, role: "Admin" },
+  { nom: "Maëlle Fontaine", equipe: "Direction Commerciale", role: "Manager", equipesGerees: ["Direction Commerciale"] },
+  { nom: "Karim Haddad", equipe: "Direction Commerciale", role: "Manager", equipesGerees: ["Direction Commerciale", "Marketing"] },
+  { nom: "Sofia Benali", equipe: "Direction Commerciale", role: "Collaborateur" },
+  { nom: "Thomas Diallo", equipe: "Direction Commerciale", role: "Collaborateur" },
+  { nom: "Lina Moreau", equipe: "Direction Commerciale", role: "Collaborateur" },
+  { nom: "Yanis Okafor", equipe: "Finance", role: "Manager", equipesGerees: ["Finance"] },
+  { nom: "Julien Caron", equipe: "Marketing", role: "Collaborateur" },
+  { nom: "Kesha Diallo", equipe: "People", role: "Manager", equipesGerees: ["People", "Direction Commerciale"] },
+  { nom: "Julie Moreau", equipe: "People", role: "Manager", equipesGerees: ["People", "Pôle Data et IA"] },
+  { nom: "Gontran Lefèvre", equipe: "People", role: "Collaborateur" },
+  { nom: "Hugo Martin", equipe: "People", role: "Collaborateur" },
+  { nom: "Léa Bernard", equipe: "Pôle Data et IA", role: "Collaborateur" },
+  { nom: "Sophie Marchand", equipe: "Product", role: "Manager", equipesGerees: ["Product"] },
+  { nom: "Nina Petit", equipe: "Product", role: "Collaborateur" },
 ];
 
 // Adresse fictive : prenom.nom@bigger-boat.example
