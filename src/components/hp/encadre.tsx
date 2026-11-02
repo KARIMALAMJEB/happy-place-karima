@@ -36,7 +36,7 @@ export function Encadre({
     <section
       id={id}
       aria-label={title}
-      className={cn("flex scroll-mt-24 flex-col border border-line border-l-4 border-l-anthracite bg-white", className)}
+      className={cn("flex min-w-0 scroll-mt-24 flex-col border border-line border-l-4 border-l-anthracite bg-white", className)}
     >
       <div className="flex flex-col gap-3 border-b border-line bg-neutral-1 px-6 py-3">
         <div className="flex min-h-10 items-center justify-between gap-4">
