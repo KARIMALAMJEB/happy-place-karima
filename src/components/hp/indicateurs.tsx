@@ -37,17 +37,15 @@ const echelle = (serie: number[]) => {
   return serie.map((v, i) => ({ x: serie.length === 1 ? W / 2 : (i / (serie.length - 1)) * W, y: H - 4 - ((v - min) / plage) * (H - 10) }));
 };
 
-// Courbe d'évolution avec aire douce et point final
+// Courbe d'évolution avec aire douce
 function Courbe({ serie }: { serie: number[] }) {
   const pts = echelle(serie);
   const ligne = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
   const aire = `${ligne} L${W},${H} L0,${H} Z`;
-  const fin = pts[pts.length - 1];
   return (
     <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="h-10 w-full" aria-hidden>
       <path d={aire} fill={ROSE_CLAIR} />
       <path d={ligne} fill="none" stroke={ANTHRACITE} strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
-      <circle cx={fin.x} cy={fin.y} r="2.5" fill={ROSE} stroke={ANTHRACITE} strokeWidth="1" vectorEffect="non-scaling-stroke" />
     </svg>
   );
 }

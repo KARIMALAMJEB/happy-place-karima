@@ -88,7 +88,7 @@ function Page() {
       </div>
       <header className="flex flex-col gap-2 border border-line bg-white px-8 py-6">
         <h1 className="text-[36px] leading-[44px]">Indicateurs de performance de l'entreprise</h1>
-        <p className="text-[16px] leading-6">Ces indicateurs sont saisis à la main par l'admin. Seuls ceux dont la case « Publié » est cochée s'affichent sur le tableau de bord de chaque personne.</p>
+        <p className="text-[16px] leading-6">{editable ? "Ces indicateurs sont saisis à la main par l'admin. Seuls ceux dont la case « Publié » est cochée s'affichent sur le tableau de bord de chaque personne." : "Indicateurs de performance publiés par l'admin, mis à jour à la main."}</p>
       </header>
 
       {metrics.isError ? (
