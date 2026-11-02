@@ -214,7 +214,7 @@ function DemandeDetail() {
           <nav aria-label="Fil d'Ariane" className="flex items-center gap-2 text-[14px] leading-5">
             <Link to="/demandes" className={LIEN_FIL}>{filNom}</Link>
             <span aria-hidden className="text-ink-2">/</span>
-            <span aria-current="page" className="font-semibold">{titleOf(r)}</span>
+            <span aria-current="page" className="font-semibold">{refOf(r)}</span>
           </nav>
         </div>
 
@@ -242,6 +242,7 @@ function DemandeDetail() {
                   <input
                     type="radio"
                     name="nature"
+                    className="size-6 accent-anthracite"
                     checked={r.blocking === o.v}
                     disabled={changerNature.isPending}
                     onChange={() => changerNature.mutate(o.v)}

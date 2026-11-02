@@ -406,7 +406,7 @@ function Rediger() {
             {photos.length > 0 && (
               <div className="flex flex-col gap-2">
                 <label className="flex min-h-11 cursor-pointer items-start gap-3 border border-line px-4 py-3 hover:bg-neutral-1">
-                  <input id="accord" type="checkbox" checked={accord} onChange={(e) => setAccord(e.target.checked)} className="mt-0.5 size-5 shrink-0 accent-anthracite" />
+                  <input id="accord" type="checkbox" checked={accord} onChange={(e) => setAccord(e.target.checked)} className="mt-0.5 size-6 shrink-0 accent-anthracite" />
                   <span className="flex flex-col gap-1">
                     <span className="text-[14px] leading-5 font-semibold">J'ai l'accord des personnes photographiées *</span>
                     <span className="text-[12px] leading-4 text-ink-2">Droit à l'image : obligatoire si des collègues sont reconnaissables, pour chacune des photos.</span>
@@ -479,7 +479,7 @@ function Rediger() {
                     perimetre === o.valeur ? "border-anthracite bg-neutral-1" : "border-line",
                   )}
                 >
-                  <input type="radio" name="perimetre" checked={perimetre === o.valeur} onChange={() => setPerimetre(o.valeur)} className="mt-0.5 size-5 shrink-0 accent-anthracite" />
+                  <input type="radio" name="perimetre" checked={perimetre === o.valeur} onChange={() => setPerimetre(o.valeur)} className="mt-0.5 size-6 shrink-0 accent-anthracite" />
                   <span className="flex flex-col gap-1">
                     <span className="flex items-center gap-2 text-[14px] leading-5 font-semibold">
                       <o.icon size={16} aria-hidden />
@@ -501,7 +501,7 @@ function Rediger() {
                         type="checkbox"
                         checked={equipes.includes(e)}
                         onChange={(ev) => setEquipes((l) => (ev.target.checked ? [...l, e] : l.filter((x) => x !== e)))}
-                        className="size-5 shrink-0 accent-anthracite"
+                        className="size-6 shrink-0 accent-anthracite"
                       />
                       <span className="text-[14px] leading-5">{e}</span>
                     </label>

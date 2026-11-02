@@ -54,7 +54,7 @@ function Choix<T extends string>({ nom, valeur, options, onChange, erreur }: {
             valeur === o.valeur ? "border-anthracite bg-neutral-1" : erreur ? "border-anthracite" : "border-line",
           )}
         >
-          <input type="radio" name={nom} value={o.valeur} checked={valeur === o.valeur} onChange={() => onChange(o.valeur)} className="mt-0.5 size-5 shrink-0 accent-anthracite" />
+          <input type="radio" name={nom} value={o.valeur} checked={valeur === o.valeur} onChange={() => onChange(o.valeur)} className="mt-0.5 size-6 shrink-0 accent-anthracite" />
           <span className="flex flex-col gap-1">
             <span className="flex items-center gap-2 text-[14px] leading-5 font-semibold">
               <o.icon size={16} aria-hidden />
@@ -244,7 +244,7 @@ function DeposerPage() {
                       { v: "non" as const, l: "NON BLOQUANTE", aide: "Tu peux continuer à travailler en attendant : c'est le bon choix pour une idée ou une amélioration.", icone: Clock },
                     ]).map(({ v, l, aide, icone: Icone }) => (
                       <label key={v} className={cn("flex min-h-11 cursor-pointer items-start gap-3 border px-4 py-3 hover:bg-neutral-1", bloquante === v ? "border-anthracite bg-neutral-1" : erreurs.bloquante ? "border-anthracite" : "border-line")}>
-                        <input type="radio" name="bloquante" checked={bloquante === v} onChange={() => setBloquante(v)} aria-required="true" className="mt-0.5 size-5 shrink-0 accent-anthracite" />
+                        <input type="radio" name="bloquante" checked={bloquante === v} onChange={() => setBloquante(v)} aria-required="true" className="mt-0.5 size-6 shrink-0 accent-anthracite" />
                         <span className="flex flex-col gap-1">
                           <span className="label flex items-center gap-2 text-anthracite"><Icone size={16} aria-hidden />{l}</span>
                           <span className="text-[12px] leading-4 text-ink-2">{aide}</span>
@@ -308,7 +308,7 @@ function DeposerPage() {
                 </div>
               )}
               <label className="flex min-h-11 cursor-pointer items-start gap-3 border border-line px-4 py-3 hover:bg-neutral-1">
-                <input type="checkbox" checked={confidentielle} onChange={(e) => setConfidentielle(e.target.checked)} className="mt-0.5 size-5 shrink-0 accent-anthracite" />
+                <input type="checkbox" checked={confidentielle} onChange={(e) => setConfidentielle(e.target.checked)} className="mt-0.5 size-6 shrink-0 accent-anthracite" />
                 <span className="flex flex-col gap-1">
                   <span className="text-[14px] leading-5 font-semibold">Identité confidentielle</span>
                   <span className="text-[12px] leading-4 text-ink-2">

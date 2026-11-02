@@ -169,7 +169,7 @@ function ChoisirRolePage() {
                       value={r.value}
                       checked={role === r.value}
                       onChange={() => setRole(r.value)}
-                      className="mt-1 accent-[var(--color-primary)]"
+                      className="mt-1 size-6 accent-[var(--color-primary)]"
                     />
                     <span>
                       <span className="block font-label-md text-label-md text-on-surface">{r.label}</span>

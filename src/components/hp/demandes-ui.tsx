@@ -87,7 +87,7 @@ function Ligne({ r, perspective }: { r: RequestRow; perspective: Perspective }) 
         {repondue && (
           <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] leading-4">
             {nl ? (
-              <span className="inline-flex items-center gap-1.5 bg-anthracite px-2 py-0.5 text-[11px] leading-4 font-bold tracking-wide text-white uppercase">
+              <span className="inline-flex items-center gap-1.5 bg-anthracite px-2 py-0.5 text-[12px] leading-4 font-bold tracking-wide text-white uppercase">
                 Nouvelle réponse
               </span>
             ) : (
