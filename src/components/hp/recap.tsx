@@ -52,7 +52,7 @@ export function RecapTuiles({ tuiles, actif, onChoisir }: { tuiles: Tuile[]; act
             <span className={cn("font-title text-[20px] leading-7 font-bold", pris ? "text-white" : "text-ink")}>{t.n}</span>
             <span className={cn("flex-1 text-[12px] leading-4", pris ? "font-semibold text-white" : "text-ink-2")}>{t.label}</span>
             {pris && (
-              <span aria-hidden className="flex shrink-0 items-center gap-1 text-[11px] leading-4 font-bold tracking-wide text-white uppercase">
+              <span aria-hidden className="flex shrink-0 items-center gap-1 text-[12px] leading-4 font-bold tracking-wide text-white uppercase">
                 <Check size={14} /> Filtre actif
               </span>
             )}
@@ -68,7 +68,7 @@ export function BandeauFiltre({ label, n, onRetirer }: { label: string; n?: numb
   return (
     <div role="status" className="flex w-full flex-wrap items-center justify-between gap-3 border-l-4 border-l-anthracite bg-neutral-1 px-4 py-2">
       <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] leading-5">
-        <span className="inline-flex items-center gap-1.5 bg-anthracite px-2 py-0.5 text-[11px] leading-4 font-bold tracking-wide text-white uppercase">
+        <span className="inline-flex items-center gap-1.5 bg-anthracite px-2 py-0.5 text-[12px] leading-4 font-bold tracking-wide text-white uppercase">
           <Filter size={12} aria-hidden /> Filtre actif
         </span>
         <span className="font-semibold">{label}</span>

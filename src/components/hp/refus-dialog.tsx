@@ -91,7 +91,7 @@ export function RefusDialog({ demande: d, ouvert, onFermer, onConfirmer, envoi }
                 motif === m.valeur ? "border-anthracite bg-neutral-1" : "border-line",
               )}
             >
-              <input type="radio" name="motif" value={m.valeur} checked={motif === m.valeur} onChange={() => setMotif(m.valeur)} className="mt-0.5 size-5 shrink-0 accent-anthracite" />
+              <input type="radio" name="motif" value={m.valeur} checked={motif === m.valeur} onChange={() => setMotif(m.valeur)} className="mt-0.5 size-6 shrink-0 accent-anthracite" />
               <span className="flex flex-col gap-1">
                 <span className="text-[14px] leading-5 font-semibold">{m.label}</span>
                 <span className="text-[12px] leading-4 text-ink-2">{m.aide}</span>

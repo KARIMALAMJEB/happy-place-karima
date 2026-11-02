@@ -122,7 +122,8 @@ function DirectoryPage() {
       {personnes.length === 0 && <p className="text-[14px] text-ink-2">Aucun résultat pour « {recherche} ».</p>}
 
       {vue === "organigramme" && personnes.length > 0 && (
-        <div className="flex flex-col items-center border border-line bg-white p-6" aria-label="Organigramme">
+        <div className="overflow-x-auto border border-line bg-white p-6" aria-label="Organigramme">
+          <div className="flex flex-col items-center" style={{ minWidth: Math.max(equipes.length, 1) * 200 }}>
           {direction.length > 0 && (
             <>
               <CarteEquipe equipe={DIRECTION} membres={direction} moi={profil.nom} className="w-72" />
@@ -152,6 +153,7 @@ function DirectoryPage() {
               ))}
             </ul>
           )}
+          </div>
         </div>
       )}
 
