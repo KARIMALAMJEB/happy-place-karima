@@ -93,11 +93,13 @@ function Accueil() {
       <div className="flex flex-col gap-6 font-body text-ink">
         {email && <DepartureNotices email={email} />}
 
-        <section className="flex flex-col gap-5 border border-line bg-white px-6 py-6 lg:px-8">
+        <section className="relative flex flex-col gap-6 overflow-hidden border border-line bg-gradient-to-br from-[#F5D5D4] via-[#F8E3D8] to-[#F0D0BC] px-6 py-8 lg:px-10 lg:py-10">
+          <span aria-hidden className="absolute inset-x-0 top-0 flex h-1.5"><span className="flex-1 bg-anthracite" /><span className="w-1/4 bg-[#C99695]" /><span className="w-1/6 bg-[#F0D0BC]" /></span>
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div className="flex flex-col gap-2">
-              <p className="text-[14px] leading-5 text-ink-2"><span className="label">{team ?? roleLabel}</span> · <time>{today}</time></p>
-              <h1 className="self-start border-b-[3px] border-line pb-1 text-[28px] leading-9 lg:text-[36px] lg:leading-[44px]">Bonjour {firstName}</h1>
+            <div className="flex flex-col gap-3">
+              <p className="text-[14px] leading-5 text-anthracite"><span className="label">{team ?? roleLabel}</span> · <time>{today}</time></p>
+              <h1 className="text-[36px] leading-[42px] lg:text-[52px] lg:leading-[58px]">Bonjour {firstName}</h1>
+              <p className="max-w-[52ch] text-[16px] leading-6 text-anthracite/80">Ton point de pilotage chez Bigger Boat : les actualités, les demandes et idées du terrain, les points bloquants et les chiffres clés.</p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
               {peutRediger && (
