@@ -7,7 +7,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { DepartureNotices } from "@/components/departure-notices";
-import { HpButton, HpIconButton } from "@/components/hp/button";
+import { HpButton } from "@/components/hp/button";
 import { BlocLecture, BlocStatuts } from "@/components/hp/demandes-blocs";
 import { Encadre, Picto } from "@/components/hp/encadre";
 import { HpPage, useOwnProfile } from "@/components/hp/page";
@@ -259,8 +259,8 @@ function Carrousel({ news, loading, error, equipe, className }: { news: News[]; 
       className={className}
       filtre={
         <TabList label="Actualités">
-          <TabButton grand controle="carrousel-actus" active={onglet === "entreprise"} onClick={() => changer("entreprise")}>{`ENTREPRISE (${parOnglet.entreprise.length})`}</TabButton>
-          <TabButton grand controle="carrousel-actus" active={onglet === "equipe"} onClick={() => changer("equipe")}>{`MON ÉQUIPE${equipe ? ` · ${equipe.toUpperCase()}` : ""} (${parOnglet.equipe.length})`}</TabButton>
+          <TabButton controle="carrousel-actus" active={onglet === "entreprise"} onClick={() => changer("entreprise")}>{`ENTREPRISE (${parOnglet.entreprise.length})`}</TabButton>
+          <TabButton controle="carrousel-actus" active={onglet === "equipe"} onClick={() => changer("equipe")}>{`MON ÉQUIPE${equipe ? ` · ${equipe.toUpperCase()}` : ""} (${parOnglet.equipe.length})`}</TabButton>
         </TabList>
       }
     >
@@ -271,17 +271,17 @@ function Carrousel({ news, loading, error, equipe, className }: { news: News[]; 
       ) : (
         <div id="carrousel-actus" role="tabpanel" className="flex flex-1 flex-col" aria-roledescription="carrousel">
           {images.length > 0 ? (
-            <div className="grid h-60 gap-px bg-line" style={{ gridTemplateColumns: `repeat(${images.length}, minmax(0, 1fr))` }}>
-              {images.map((p) => <Couverture key={p} path={p} className="h-60" />)}
+            <div className="grid h-48 gap-px bg-line" style={{ gridTemplateColumns: `repeat(${images.length}, minmax(0, 1fr))` }}>
+              {images.map((p) => <Couverture key={p} path={p} className="h-48" />)}
             </div>
           ) : (
-            <div className="flex h-60 items-center justify-center bg-neutral-1" aria-hidden><ImageIcon size={40} className="text-ink-2" /></div>
+            <div className="flex h-48 items-center justify-center bg-neutral-1" aria-hidden><ImageIcon size={40} className="text-ink-2" /></div>
           )}
           {slide ? (
             <div className="flex flex-1 items-end justify-between gap-6 px-6 py-5" aria-roledescription="diapositive" aria-label={`${i + 1} sur ${slides.length}`} aria-live={pause ? "polite" : "off"}>
               <div className="flex flex-col gap-2">
                 {slide.category && <span className="label text-ink-2">{slide.category}</span>}
-                <h3 className="text-[24px] leading-8">{slide.title}</h3>
+                <h3 className="text-[20px] leading-7">{slide.title}</h3>
                 <p className="text-[12px] leading-4 text-ink-2">{signature(slide)}</p>
               </div>
               <Link to="/actualites/$id" params={{ id: slide.id }} className="inline-flex h-11 shrink-0 items-center gap-2 px-1 text-[14px] leading-5 font-semibold text-anthracite underline underline-offset-4 hover:text-ink">
@@ -291,17 +291,26 @@ function Carrousel({ news, loading, error, equipe, className }: { news: News[]; 
           ) : (
             <p className="flex-1 px-6 py-5 text-[14px] leading-5 text-ink-2">Aucune actualité publiée dans cet onglet.</p>
           )}
-          <div className="flex flex-wrap items-center justify-between gap-4 border-t border-line px-6 py-3">
-            <HpButton role="consulte" icon={pause ? Play : Pause} onClick={() => setPause((p) => !p)} className="w-[230px]">{pause ? "REPRENDRE" : "METTRE EN PAUSE (6S)"}</HpButton>
-            <span className="text-[12px] leading-4 text-ink-2">Communication interne Bigger Boat</span>
-            <div className="flex flex-wrap items-center gap-1">
-              {slides.map((s, k) => (
-                <button key={s.id} type="button" aria-label={`Diapositive ${k + 1} sur ${slides.length}`} aria-current={k === i} onClick={() => setI(k)} className="group flex size-11 cursor-pointer items-center justify-center">
-                  <span className={cn("size-3 border group-hover:border-anthracite", k === i ? "border-anthracite bg-anthracite" : "border-ink-2 bg-white")} />
-                </button>
-              ))}
-              <HpIconButton icon={ChevronLeft} label="Diapositive précédente" className="ml-2" onClick={() => aller(-1)} />
-              <HpIconButton icon={ChevronRight} label="Diapositive suivante" onClick={() => aller(1)} />
+          <div className="flex items-center justify-between gap-3 border-t border-line px-6 py-2">
+            <button
+              type="button"
+              onClick={() => setPause((p) => !p)}
+              className="label inline-flex h-8 cursor-pointer items-center gap-1.5 px-1 text-ink-2 hover:text-anthracite"
+            >
+              {pause ? <Play size={14} aria-hidden /> : <Pause size={14} aria-hidden />}
+              {pause ? "Reprendre" : "Pause"}
+            </button>
+            <div className="flex items-center gap-1">
+              <span className="hidden items-center sm:flex">
+                {slides.map((s, k) => (
+                  <button key={s.id} type="button" aria-label={`Diapositive ${k + 1} sur ${slides.length}`} aria-current={k === i} onClick={() => setI(k)} className="group flex size-6 cursor-pointer items-center justify-center">
+                    <span className={cn("size-2 border group-hover:border-anthracite", k === i ? "border-anthracite bg-anthracite" : "border-ink-2 bg-white")} />
+                  </button>
+                ))}
+              </span>
+              <span className="label px-2 text-ink-2 sm:hidden" aria-hidden>{slides.length ? `${i + 1} / ${slides.length}` : ""}</span>
+              <button type="button" aria-label="Diapositive précédente" onClick={() => aller(-1)} className="inline-flex size-8 cursor-pointer items-center justify-center text-anthracite hover:bg-neutral-1"><ChevronLeft size={16} aria-hidden /></button>
+              <button type="button" aria-label="Diapositive suivante" onClick={() => aller(1)} className="inline-flex size-8 cursor-pointer items-center justify-center text-anthracite hover:bg-neutral-1"><ChevronRight size={16} aria-hidden /></button>
             </div>
           </div>
         </div>
