@@ -9,7 +9,7 @@ import { corpus, dansLePerimetre, rechercher, type ActualiteLue, type Extrait, t
 export type ReponseAssistant = {
   answer: string;
   sources: Source[];
-  mode: "ia" | "sans-ia" | "aucun-resultat" | "hors-sujet" | "indisponible" | "donnee-personnelle";
+  mode: "ia" | "sans-ia" | "aucun-resultat" | "hors-sujet" | "indisponible" | "donnee-personnelle" | "demandes-non-lues";
   ia: boolean; // vrai seulement si le texte a été rédigé par le modèle
   contact?: { annuaire: string }; // « Pour en savoir plus » : lien vers l'Annuaire du profil
 };
@@ -17,6 +17,8 @@ export type ReponseAssistant = {
 export const RIEN = "Je n'ai rien trouvé dans Happy Place.";
 const INDISPONIBLE = "L'assistant est indisponible pour le moment, essaie la recherche en haut de page.";
 const DONNEE_PERSONNELLE = "Ta question semble contenir une donnée personnelle. Reformule-la sans.";
+const DEMANDES_NON_LUES =
+  "Je ne lis jamais le contenu des demandes ni qui les a déposées. Retrouve-les dans « Mes demandes » ou « Demandes à valider » sur l'accueil.";
 export const HORS_SUJET = "Je réponds uniquement aux questions sur Happy Place et ses contenus. Reformule ta question ou cherche dans l'Annuaire.";
 
 // E-mail, numéro de téléphone (français ou international) ou numéro à 13 chiffres et plus (sécurité sociale), espaces et points ignorés
@@ -25,6 +27,10 @@ export function contientDonneePersonnelle(texte: string) {
   const chiffres = texte.replace(/[\s.\-()]/g, "");
   return /(?:\+|00)\d{9,14}/.test(chiffres) || /(?<!\d)0[1-9]\d{8}(?!\d)/.test(chiffres) || /\d{13,}/.test(chiffres);
 }
+
+// Question sur les demandes d'une personne précise (« les demandes de Thomas », « déposées par Léa ») : l'assistant ne lit pas les demandes
+export const viseLesDemandesDUnePersonne = (texte: string) =>
+  /\b(demandes?|idées?|suggestions?)\b.{0,50}\b(de|d'|du|par|déposées?\s+par)\s+[A-ZÉÈÀ][\p{L}'-]+/u.test(texte);
 
 // Journal technique : date, rôle du profil, nombre de sources, mode, erreur éventuelle. Jamais de texte. Purge à 30 jours.
 type LigneJournal = { date: string; role: Profil["id"]; sources: number; mode: ReponseAssistant["mode"]; erreur?: string };
@@ -52,8 +58,8 @@ const secret = (nom: string): string | undefined => {
   const v = process.env[nom] ?? ENV_WORKER?.[nom];
   return typeof v === "string" && v.trim() ? v.trim() : undefined;
 };
-// DIAGNOSTIC TEMPORAIRE : ajoute la cause technique à la réponse (à retirer après les tests)
-const diag = (r: ReponseAssistant, why: string): ReponseAssistant => ({ ...r, answer: `${r.answer} [diag : ${why}]` });
+// La cause technique est journalisée (type d'erreur seulement), jamais affichée à la personne
+const diag = (r: ReponseAssistant, _why?: string): ReponseAssistant => r;
 const PREFIXE_SANS_IA = "Voici ce que j'ai trouvé dans Happy Place : ";
 const MODELE_PAR_DEFAUT = "@cf/mistralai/mistral-small-3.1-24b-instruct";
 const DELAI_MS = 15_000;
@@ -128,6 +134,9 @@ export async function repondre(question: string, profil: Profil, actualites: Act
   // Donnée personnelle : rien n'est cherché, rien n'est envoyé au modèle
   if (contientDonneePersonnelle(q)) return journaliser(profil.id, { answer: DONNEE_PERSONNELLE, sources: [], mode: "donnee-personnelle", ia: false });
 
+  // Les demandes ne sont jamais lues : une question sur celles d'une personne reçoit une réponse fixe
+  if (viseLesDemandesDUnePersonne(question.trim().slice(0, 300))) return journaliser(profil.id, { answer: DEMANDES_NON_LUES, sources: [], mode: "demandes-non-lues", ia: false });
+
   // Droits vérifiés deux fois : seuls des extraits du corpus lisible par ce profil peuvent partir vers le modèle
   const docs = corpus(profil, actualites);
   const lisibles = new Set(docs.map((d) => d.lien));
@@ -163,7 +172,7 @@ export async function repondre(question: string, profil: Profil, actualites: Act
   try {
     const texte = await appelerModele(q, contexte);
     if (texte.includes("Je n'ai rien trouvé")) return journaliser(profil.id, rien(true));
-    return journaliser(profil.id, { answer: texte, sources: trouves.slice(0, 3).map(versSource), mode: "ia", ia: true });
+    return journaliser(profil.id, { answer: texte, sources: trouves.filter((e, i) => i === 0 || e.score >= trouves[0].score * 0.6).slice(0, 3).map(versSource), mode: "ia", ia: true });
   } catch (e) {
     // Quota épuisé, réseau, délai dépassé : le meilleur extrait plutôt qu'un plantage (seul le type d'erreur est journalisé)
     const why = e instanceof Error ? e.message.slice(0, 80) : "erreur";
