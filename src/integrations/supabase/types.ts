@@ -266,36 +266,72 @@ export type Database = {
       }
       news: {
         Row: {
+          category: string | null
+          image_paths: string[]
+          image_consent: boolean
+          attachments: Json
+          requested_at: string | null
+          authorized_by: string | null
+          authorized_at: string | null
+          refusal_note: string | null
           author: string
           author_email: string | null
+          author_role: string | null
+          author_team: string | null
           body: string | null
           created_at: string
           id: string
           image_path: string | null
+          scope: string
+          teams: string[]
           links: Json
           revalidate_at: string | null
           status: Database["public"]["Enums"]["news_status"]
           title: string
         }
         Insert: {
+          category?: string | null
+          image_paths?: string[]
+          image_consent?: boolean
+          attachments?: Json
+          requested_at?: string | null
+          authorized_by?: string | null
+          authorized_at?: string | null
+          refusal_note?: string | null
           author?: string
           author_email?: string | null
+          author_role?: string | null
+          author_team?: string | null
           body?: string | null
           created_at?: string
           id?: string
           image_path?: string | null
+          scope?: string
+          teams?: string[]
           links?: Json
           revalidate_at?: string | null
           status?: Database["public"]["Enums"]["news_status"]
           title: string
         }
         Update: {
+          category?: string | null
+          image_paths?: string[]
+          image_consent?: boolean
+          attachments?: Json
+          requested_at?: string | null
+          authorized_by?: string | null
+          authorized_at?: string | null
+          refusal_note?: string | null
           author?: string
           author_email?: string | null
+          author_role?: string | null
+          author_team?: string | null
           body?: string | null
           created_at?: string
           id?: string
           image_path?: string | null
+          scope?: string
+          teams?: string[]
           links?: Json
           revalidate_at?: string | null
           status?: Database["public"]["Enums"]["news_status"]
@@ -360,6 +396,7 @@ export type Database = {
         Row: {
           attachment_name: string | null
           attachment_path: string | null
+          attachments: Json
           author_name: string
           content: string
           created_at: string
@@ -376,6 +413,7 @@ export type Database = {
         Insert: {
           attachment_name?: string | null
           attachment_path?: string | null
+          attachments?: Json
           author_name: string
           content: string
           created_at?: string
@@ -392,6 +430,7 @@ export type Database = {
         Update: {
           attachment_name?: string | null
           attachment_path?: string | null
+          attachments?: Json
           author_name?: string
           content?: string
           created_at?: string
@@ -472,7 +511,7 @@ export type Database = {
       app_role: "admin" | "manager" | "collaborateur"
       blocker_severity: "critical" | "warning" | "info"
       blocker_status: "OUVERT" | "EN COURS" | "SURVEILLANCE" | "RÉSOLU"
-      news_status: "brouillon" | "publiée"
+      news_status: "brouillon" | "publiée" | "en attente" | "autorisée" | "refusée"
       rejection_category:
         | "à clarifier"
         | "en désaccord avec les process"
@@ -609,7 +648,7 @@ export const Constants = {
       app_role: ["admin", "manager", "collaborateur"],
       blocker_severity: ["critical", "warning", "info"],
       blocker_status: ["OUVERT", "EN COURS", "SURVEILLANCE", "RÉSOLU"],
-      news_status: ["brouillon", "publiée"],
+      news_status: ["brouillon", "publiée", "en attente", "autorisée", "refusée"],
       rejection_category: [
         "à clarifier",
         "en désaccord avec les process",

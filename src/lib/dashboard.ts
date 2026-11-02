@@ -14,10 +14,22 @@ export type News = {
   body: string | null;
   author: string;
   author_email?: string | null;
+  author_role?: string | null;
+  author_team?: string | null;
   status: string;
   created_at: string;
   image_path?: string | null;
   links?: unknown;
+  scope?: "entreprise" | "equipes";
+  teams?: string[];
+  requested_at?: string | null;
+  authorized_by?: string | null;
+  authorized_at?: string | null;
+  refusal_note?: string | null;
+  category?: string | null;
+  image_paths?: string[];
+  image_consent?: boolean;
+  attachments?: unknown;
 };
 
 export type Submission = {
@@ -32,6 +44,7 @@ export type Submission = {
   submitted_by_email?: string | null;
   attachment_path?: string | null;
   attachment_name?: string | null;
+  attachments?: unknown;
 };
 
 export const REJECTION_CATEGORIES = [
@@ -60,6 +73,11 @@ export type Metric = {
   trend: "hausse" | "baisse" | "stable";
   previous_value: number | null;
   delta: number | string | null;
+  published?: boolean;
+  updated_at?: string;
+  updated_by_name?: string | null;
+  source?: string | null;
+  definition?: string | null;
 };
 
 export const TREND_LABELS: Record<Metric["trend"], string> = {
@@ -103,8 +121,12 @@ export async function saveDraftNews(input: {
   author_email: string;
   links: NewsLink[];
   media: MediaDraft;
+  scope: "entreprise" | "equipes";
+  teams: string[];
 }) {
   const payload = {
+    scope: input.scope,
+    teams: input.scope === "equipes" ? input.teams : [],
     title: input.title,
     body: input.body,
     author: input.author,
@@ -119,15 +141,81 @@ export async function saveDraftNews(input: {
   await applyNewsImage(data.id, input.media);
 }
 
+export const CATEGORIES_NEWS = ["ÉVÉNEMENT CABINET", "VIE DU CABINET", "VIE D'ÉQUIPE", "ÉVÉNEMENT COMMERCIAL"];
+
+// Enregistre (ou crée) le brouillon d'une actualité rédigée à la manière du prototype ; renvoie son identifiant
+export async function saveNewsDraft(input: {
+  id?: string;
+  title: string;
+  body: string;
+  category: string;
+  author: string;
+  author_email: string;
+  scope: "entreprise" | "equipes";
+  teams: string[];
+  imagePaths: string[];
+  imageConsent: boolean;
+  attachments: { path: string; name: string; size: number }[];
+}): Promise<string> {
+  const payload = {
+    scope: input.scope,
+    teams: input.scope === "equipes" ? input.teams : [],
+    title: input.title,
+    body: input.body,
+    category: input.category,
+    author: input.author,
+    author_email: input.author_email.toLowerCase(),
+    status: "brouillon" as const,
+    image_path: input.imagePaths[0] ?? null,
+    image_paths: input.imagePaths,
+    image_consent: input.imageConsent,
+    attachments: input.attachments as unknown as Json,
+  };
+  const { data, error } = input.id
+    ? await db.from("news").update(payload).eq("id", input.id).select("id").single()
+    : await db.from("news").insert(payload).select("id").single();
+  if (error) throw error;
+  return data.id;
+}
+
 export async function publishDraftNews(id: string) {
   const { data, error } = await db
     .from("news")
     .update({ status: "publiée" })
     .eq("id", id)
-    .eq("status", "brouillon")
+    .in("status", ["brouillon", "autorisée"])
     .select("id");
   if (error) throw error;
   if (!data?.length) throw new Error("Vous n'avez pas le droit de publier cette actualité.");
+}
+
+// Annonce « Toute l'entreprise » : l'auteur demande l'autorisation d'un admin (nouvelle demande possible après un refus)
+export async function requestNewsAuthorization(id: string) {
+  const { data, error } = await db.from("news").update({ status: "en attente" }).eq("id", id).in("status", ["brouillon", "refusée"]).select("id");
+  if (error) throw error;
+  if (!data?.length) throw new Error("La demande d'autorisation n'a pas pu être envoyée.");
+}
+
+export async function authorizeNews(input: { id: string; by: string }) {
+  const { data, error } = await db
+    .from("news")
+    .update({ status: "autorisée", authorized_by: input.by, authorized_at: new Date().toISOString(), refusal_note: null })
+    .eq("id", input.id)
+    .eq("status", "en attente")
+    .select("id");
+  if (error) throw error;
+  if (!data?.length) throw new Error("Cette annonce n'est plus à autoriser.");
+}
+
+export async function refuseNews(input: { id: string; note: string }) {
+  const { data, error } = await db
+    .from("news")
+    .update({ status: "refusée", refusal_note: input.note })
+    .eq("id", input.id)
+    .eq("status", "en attente")
+    .select("id");
+  if (error) throw error;
+  if (!data?.length) throw new Error("Cette annonce n'est plus à autoriser.");
 }
 
 export async function deleteDraftNews(id: string, imagePath?: string | null) {
@@ -326,6 +414,7 @@ export type MetricInput = {
   label: string;
   value: number;
   unit: string | null;
+  published?: boolean;
 };
 
 export async function fetchAllNews(): Promise<News[]> {
@@ -459,14 +548,15 @@ export async function deleteBlocker(id: string) {
 }
 
 export async function createMetric(input: MetricInput) {
-  const { error } = await db.from("metrics").insert(input);
+  // `published`, `source` et `definition` sont des colonnes ajoutées par la migration 20261102100000
+  const { error } = await db.from("metrics").insert(input as never);
   if (error) throw error;
 }
 
 export async function updateMetricRow(key: string, input: MetricInput) {
   const { error } = await db
     .from("metrics")
-    .update({ ...input, updated_at: new Date().toISOString() })
+    .update({ ...input, updated_at: new Date().toISOString() } as never)
     .eq("key", key);
   if (error) throw error;
 }
@@ -500,6 +590,18 @@ export async function fetchSubmissionHistory(submissionId: string): Promise<Subm
 }
 
 export type MetricHistoryPoint = { id: string; metric_key: string; value: number; recorded_at: string };
+
+/** Historique de tous les indicateurs visibles (la base filtre selon les droits), du plus ancien au plus récent, par clé. */
+export async function fetchMetricsHistory(): Promise<Record<string, number[]>> {
+  const { data, error } = await supabase
+    .from("metrics_history")
+    .select("metric_key, value, recorded_at")
+    .order("recorded_at", { ascending: true });
+  if (error) throw error;
+  const out: Record<string, number[]> = {};
+  for (const r of data ?? []) (out[r.metric_key] ??= []).push(Number(r.value));
+  return out;
+}
 
 export async function fetchMetricHistory(key: string): Promise<MetricHistoryPoint[]> {
   const { data, error } = await supabase
