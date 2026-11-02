@@ -138,7 +138,7 @@ function Sidebar({ role, ouvert, onFermer, accueil }: { role: AppRole; ouvert: b
         )}
       </nav>
       <div className="mt-auto flex flex-col gap-3 border-t border-line p-5">
-        <Link to="/choisir-role" className="label inline-flex items-center gap-2 text-ink-2 underline underline-offset-4 hover:text-ink">
+        <Link to="/choisir-role" className="label inline-flex min-h-10 items-center gap-2 text-ink-2 underline underline-offset-4 hover:text-ink">
           <Repeat size={14} aria-hidden /> Changer de rôle (démo)
         </Link>
         <HpButton role="consulte" icon={LogOut} className="w-full lg:hidden" onClick={() => signOut()}>

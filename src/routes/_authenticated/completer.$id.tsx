@@ -143,7 +143,7 @@ function Page() {
           <Link to="/demande/$id" params={{ id: r.id }} className={hpButtonVariants({ role: "consulte" })}><span>VOIR LA DEMANDE</span></Link>
         </section>
       ) : (
-        <div className="grid items-start gap-6 lg:grid-cols-3">
+        <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-3">
           <div className="flex flex-col gap-6 lg:col-span-2">
             <Bloc titre={`Ce que ${valideur} te demande de préciser`}>
               <ol className="flex list-decimal flex-col gap-1 pl-6 text-[14px] leading-5 font-semibold">

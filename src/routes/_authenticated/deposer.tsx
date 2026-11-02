@@ -210,7 +210,7 @@ function DeposerPage() {
           </p>
         </header>
 
-        <form onSubmit={valider} noValidate className="grid items-start gap-6 lg:grid-cols-3">
+        <form onSubmit={valider} noValidate className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-3">
           <div className="flex flex-col gap-6 lg:col-span-2">
             {repris && (
               <p role="status" className="flex flex-wrap items-center justify-between gap-3 border border-line border-l-4 border-l-anthracite bg-neutral-1 px-4 py-3 text-[14px] leading-5">

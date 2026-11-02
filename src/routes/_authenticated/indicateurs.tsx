@@ -94,7 +94,7 @@ function Page() {
       {metrics.isError ? (
         <p role="alert">Les indicateurs sont indisponibles.</p>
       ) : (
-        <div className="grid items-start gap-6 lg:grid-cols-3">
+        <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-3">
           {editable && (
             <Encadre icon={SquarePen} title="Saisie des indicateurs" className="lg:col-span-2">
               <table className="w-full border-collapse text-left">
