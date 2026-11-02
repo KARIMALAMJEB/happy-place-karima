@@ -1,8 +1,9 @@
 import { Link, useRouteContext, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ClipboardList, Contact, Database, LayoutDashboard, LogOut, Menu, Newspaper, Repeat, Search, TrendingUp, Wrench, X } from "lucide-react";
+import { ClipboardList, Contact, Database, LayoutDashboard, LogOut, Menu, Newspaper, Repeat, TrendingUp, Wrench, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Assistant } from "@/components/hp/assistant";
+import { RechercheGlobale } from "@/components/hp/recherche-globale";
 import { HpButton, HpIconButton } from "@/components/hp/button";
 import { signOut, type AppRole } from "@/lib/auth";
 import { fetchNews } from "@/lib/dashboard";
@@ -162,15 +163,7 @@ function Header({ name, role, sousTitre, menuOuvert, onMenu }: { name: string; r
           MENU
         </HpButton>
         <span className="label-13 text-ink">HAPPY PLACE V2</span>
-        <label className="relative hidden items-center lg:flex">
-          <span className="sr-only">Rechercher</span>
-          <Search size={16} aria-hidden className="pointer-events-none absolute left-3 text-ink-2" />
-          <input
-            type="search"
-            placeholder="Rechercher une demande, un document, une personne"
-            className="h-11 w-96 border border-field bg-white pr-3 pl-9 text-[14px] text-ink placeholder:text-ink-2"
-          />
-        </label>
+        <RechercheGlobale role={role} equipe={sousTitre} />
       </div>
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-3">
