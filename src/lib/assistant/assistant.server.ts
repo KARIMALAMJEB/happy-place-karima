@@ -171,7 +171,7 @@ export async function repondre(question: string, profil: Profil, actualites: Act
   if (contexte.length === 0) return journaliser(profil.id, diag(rien(false), "aucun contenu lisible"));
   try {
     const texte = await appelerModele(q, contexte);
-    if (texte.includes("Je n'ai rien trouvé")) return journaliser(profil.id, rien(true));
+    if (texte.includes("Je n'ai rien trouvé")) return journaliser(profil.id, rien(false));
     return journaliser(profil.id, { answer: texte, sources: trouves.filter((e, i) => i === 0 || e.score >= trouves[0].score * 0.6).slice(0, 3).map(versSource), mode: "ia", ia: true });
   } catch (e) {
     // Quota épuisé, réseau, délai dépassé : le meilleur extrait plutôt qu'un plantage (seul le type d'erreur est journalisé)
