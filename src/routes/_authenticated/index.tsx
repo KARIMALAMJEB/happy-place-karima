@@ -271,10 +271,10 @@ function Carrousel({ news, loading, error, equipe, className }: { news: News[]; 
           ) : (
             <p className="flex-1 px-6 py-5 text-[14px] leading-5 text-ink-2">Aucune actualité publiée dans cet onglet.</p>
           )}
-          <div className="flex items-center justify-between gap-4 border-t border-line px-6 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-t border-line px-6 py-3">
             <HpButton role="consulte" icon={pause ? Play : Pause} onClick={() => setPause((p) => !p)} className="w-[230px]">{pause ? "REPRENDRE" : "METTRE EN PAUSE (6S)"}</HpButton>
             <span className="text-[12px] leading-4 text-ink-2">Communication interne Bigger Boat</span>
-            <div className="flex items-center gap-1">
+            <div className="flex flex-wrap items-center gap-1">
               {slides.map((s, k) => (
                 <button key={s.id} type="button" aria-label={`Diapositive ${k + 1} sur ${slides.length}`} aria-current={k === i} onClick={() => setI(k)} className="group flex size-11 cursor-pointer items-center justify-center">
                   <span className={cn("size-3 border group-hover:border-anthracite", k === i ? "border-anthracite bg-anthracite" : "border-ink-2 bg-white")} />
