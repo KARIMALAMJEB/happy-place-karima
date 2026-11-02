@@ -41,9 +41,12 @@ function DemandesPage() {
             {role === "collaborateur" ? "Mes demandes" : "Demandes"}
           </h1>
           <Link to="/deposer" className="contents">
-            <HpButton role="publie" icon={Plus}>DÉPOSER UNE DEMANDE</HpButton>
+            <HpButton role="publie" icon={Plus}>DÉPOSER UNE DEMANDE OU UNE IDÉE</HpButton>
           </Link>
         </div>
+        <p className="max-w-[70ch] text-[16px] leading-6 text-ink-2">
+          Un besoin, un point bloquant ou une idée pour ton équipe ou pour le cabinet : dépose-la ici, la personne qui valide te répond et tu suis la décision.
+        </p>
         <RecapTuiles
           tuiles={tuiles}
           actif={tuile}

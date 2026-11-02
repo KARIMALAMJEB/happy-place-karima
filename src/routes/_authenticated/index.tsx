@@ -106,7 +106,7 @@ function Accueil() {
                 </Link>
               )}
               <Link to="/deposer" className="contents">
-                <HpButton role="publie" icon={Plus}>DÉPOSER UNE DEMANDE</HpButton>
+                <HpButton role="publie" icon={Plus}>DÉPOSER UNE DEMANDE OU UNE IDÉE</HpButton>
               </Link>
               <HpButton role="consulte" icon={Download} disabled={exportReport.isPending} onClick={() => exportReport.mutate()}>
                 {exportReport.isPending ? "EXPORT EN COURS…" : "EXPORTER LE RAPPORT"}
@@ -301,7 +301,7 @@ function Indicateurs({ metrics, error }: { metrics?: Awaited<ReturnType<typeof f
       ) : liste.length === 0 ? (
         <p className="px-6 py-6 text-[14px] leading-5 text-ink-2">Aucun indicateur.</p>
       ) : (
-        <div className="flex flex-1 flex-col gap-3 p-6">
+        <div className="flex flex-1 flex-col">
           {liste.map((m) => <MetricTile key={m.key} m={m} serie={series.data?.[m.key]} lien />)}
         </div>
       )}

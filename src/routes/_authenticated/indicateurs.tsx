@@ -157,8 +157,8 @@ function Page() {
             ) : apercu.length === 0 ? (
               <p className="px-6 py-6 text-[14px] leading-5 text-ink-2">Aucun indicateur.</p>
             ) : (
-              <div className="flex flex-col gap-3 p-6" aria-live="polite">
-                {apercu.map((m) => <MetricTile key={m.key} m={m} serie={series.data?.[m.key]} />)}
+              <div className="flex flex-col" aria-live="polite">
+                {apercu.map((m) => <MetricTile key={m.key} m={m} serie={series.data?.[m.key]} maj={editable} />)}
               </div>
             )}
             {!editable && maj && <p className="border-t border-line px-6 py-4 text-[12px] leading-4 text-ink-2">{texteMaj(maj)}</p>}

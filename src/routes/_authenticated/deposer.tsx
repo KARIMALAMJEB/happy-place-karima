@@ -12,7 +12,7 @@ import { MAX_PDF_BYTES, MAX_PIECES_DEPOT, THEMES, VISIBILITY_LABEL, createReques
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/deposer")({
-  head: () => ({ meta: [{ title: "Déposer une demande — Happy Place" }] }),
+  head: () => ({ meta: [{ title: "Déposer une demande ou une idée — Happy Place" }] }),
   component: DeposerPage,
 });
 
@@ -201,9 +201,10 @@ function DeposerPage() {
           <nav aria-label="Fil d'Ariane" className="flex items-center gap-2 text-[14px] leading-5">
             <Link to="/demandes" className="inline-flex min-h-6 items-center text-ink-2 underline underline-offset-2 hover:text-ink">Mes demandes</Link>
             <span aria-hidden className="text-ink-2">/</span>
-            <span aria-current="page" className="font-semibold">Déposer une demande</span>
+            <span aria-current="page" className="font-semibold">Déposer une demande ou une idée</span>
           </nav>
-          <h1 className="text-[36px] leading-[44px]">Déposer une demande</h1>
+          <h1 className="text-[36px] leading-[44px]">Déposer une demande ou une idée</h1>
+          <p className="max-w-[70ch] text-[16px] leading-6 text-ink-2">Un accès, un outil, un problème à lever, ou une idée pour améliorer le quotidien de ton équipe ou du cabinet : décris-la ici, elle est examinée par la personne qui valide.</p>
           <p className="text-[16px] leading-6">
             Demande au nom de <span className="font-semibold">{fullName}</span>{role === "admin" ? " · Admin" : ""}
           </p>
@@ -223,7 +224,7 @@ function DeposerPage() {
                   <label htmlFor="titre" className="label text-ink">Titre *</label>
                   <Compteur n={titre.length} max={MAX_TITRE} />
                 </div>
-                <input id="titre" className={champ} value={titre} maxLength={MAX_TITRE} aria-invalid={!!erreurs.titre} onChange={(e) => setTitre(e.target.value)} />
+                <input id="titre" placeholder="Ex. : un déjeuner mensuel pour accueillir les nouveaux" className={champ} value={titre} maxLength={MAX_TITRE} aria-invalid={!!erreurs.titre} onChange={(e) => setTitre(e.target.value)} />
                 <Erreur>{erreurs.titre}</Erreur>
               </div>
               <div className="flex flex-col gap-2">
@@ -240,7 +241,7 @@ function DeposerPage() {
                   <div role="radiogroup" aria-required="true" aria-invalid={!!erreurs.bloquante} className="grid grid-cols-2 gap-3">
                     {([
                       { v: "oui" as const, l: "BLOQUANTE", aide: "Tu ne peux pas poursuivre ton travail tant qu'elle n'est pas traitée. Après validation, un suivi s'ouvre (Ouvert, En cours, Résolu).", icone: TriangleAlert },
-                      { v: "non" as const, l: "NON BLOQUANTE", aide: "Tu peux continuer à travailler en attendant.", icone: Clock },
+                      { v: "non" as const, l: "NON BLOQUANTE", aide: "Tu peux continuer à travailler en attendant : c'est le bon choix pour une idée ou une amélioration.", icone: Clock },
                     ]).map(({ v, l, aide, icone: Icone }) => (
                       <label key={v} className={cn("flex min-h-11 cursor-pointer items-start gap-3 border px-4 py-3 hover:bg-neutral-1", bloquante === v ? "border-anthracite bg-neutral-1" : erreurs.bloquante ? "border-anthracite" : "border-line")}>
                         <input type="radio" name="bloquante" checked={bloquante === v} onChange={() => setBloquante(v)} aria-required="true" className="mt-0.5 size-5 shrink-0 accent-anthracite" />
