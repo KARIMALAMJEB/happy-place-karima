@@ -273,6 +273,7 @@ export type Database = {
           requested_at: string | null
           authorized_by: string | null
           authorized_at: string | null
+          published_at: string | null
           refusal_note: string | null
           author: string
           author_email: string | null
@@ -297,6 +298,7 @@ export type Database = {
           requested_at?: string | null
           authorized_by?: string | null
           authorized_at?: string | null
+          published_at?: string | null
           refusal_note?: string | null
           author?: string
           author_email?: string | null
@@ -321,6 +323,7 @@ export type Database = {
           requested_at?: string | null
           authorized_by?: string | null
           authorized_at?: string | null
+          published_at?: string | null
           refusal_note?: string | null
           author?: string
           author_email?: string | null
@@ -392,8 +395,23 @@ export type Database = {
           },
         ]
       }
+      news_reactions: {
+        Row: { created_at: string; news_id: string; reaction: number; user_email: string }
+        Insert: { created_at?: string; news_id: string; reaction: number; user_email: string }
+        Update: { created_at?: string; news_id?: string; reaction?: number; user_email?: string }
+        Relationships: [
+          {
+            foreignKeyName: "news_reactions_news_id_fkey"
+            columns: ["news_id"]
+            isOneToOne: false
+            referencedRelation: "news"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       submissions: {
         Row: {
+          admin_access: boolean
           attachment_name: string | null
           attachment_path: string | null
           attachments: Json
@@ -411,6 +429,7 @@ export type Database = {
           team: string
         }
         Insert: {
+          admin_access?: boolean
           attachment_name?: string | null
           attachment_path?: string | null
           attachments?: Json
@@ -428,6 +447,7 @@ export type Database = {
           team: string
         }
         Update: {
+          admin_access?: boolean
           attachment_name?: string | null
           attachment_path?: string | null
           attachments?: Json
@@ -489,6 +509,14 @@ export type Database = {
       }
     }
     Functions: {
+      news_reaction_counts: {
+        Args: { _ids: string[] }
+        Returns: { dislikes: number; likes: number; mine: number; news_id: string }[]
+      }
+      set_submission_admin_access: {
+        Args: { _id: string; _value: boolean }
+        Returns: undefined
+      }
       choisir_mon_role: {
         Args: {
           _first_name: string

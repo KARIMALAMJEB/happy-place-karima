@@ -83,6 +83,7 @@ function DeposerPage() {
   const [theme, setTheme] = useState<Theme | "">("");
   const [visibilite, setVisibilite] = useState<Visibility | null>(null);
   const [confidentielle, setConfidentielle] = useState(false);
+  const [accesAdmin, setAccesAdmin] = useState(false);
   const [fichiers, setFichiers] = useState<File[]>([]);
   const [equipe, setEquipe] = useState("");
   const [erreurs, setErreurs] = useState<Record<string, string>>({});
@@ -113,7 +114,7 @@ function DeposerPage() {
     } catch { /* ignoré */ }
   }, [email, cle, titre, description, bloquante, destinataire, theme, visibilite, confidentielle]);
   function effacerBrouillon() {
-    setTitre(""); setDescription(""); setBloquante(null); setTheme(""); setVisibilite(null); setConfidentielle(false);
+    setTitre(""); setDescription(""); setBloquante(null); setTheme(""); setVisibilite(null); setConfidentielle(false); setAccesAdmin(false);
     if (role !== "admin") setDestinataire(null);
     setRepris(false);
     try { localStorage.removeItem(cle); } catch { /* ignoré */ }
@@ -146,6 +147,7 @@ function DeposerPage() {
           theme: theme || null,
           confidential_identity: confidentielle,
           validator_type: destinataire ?? "manager",
+          admin_access: destinataire === "manager" && role !== "admin" ? accesAdmin : false,
         },
         fichiers,
       ),
@@ -274,7 +276,7 @@ function DeposerPage() {
                 options={[
                   { valeur: "tous", label: "Tous", aide: "Une fois validée, tous les salariés la lisent (hors identité confidentielle).", icon: Building2 },
                   { valeur: "equipe", label: "Mon équipe", aide: "Une fois validée, seuls les membres de ton équipe la lisent.", icon: Users },
-                  { valeur: "manager", label: "Mon manager uniquement", aide: "Seuls toi, ton manager et l'administration la lisent.", icon: Lock },
+                  { valeur: "manager", label: "Mon manager uniquement", aide: "Seuls toi et la personne qui la valide la lisent.", icon: Lock },
                 ]}
               />
               <Erreur>{erreurs.visibilite}</Erreur>
@@ -306,6 +308,17 @@ function DeposerPage() {
                   </select>
                   <Erreur>{erreurs.equipe}</Erreur>
                 </div>
+              )}
+              {destinataire === "manager" && role !== "admin" && (
+                <label className="flex min-h-11 cursor-pointer items-start gap-3 border border-line px-4 py-3 hover:bg-neutral-1">
+                  <input type="checkbox" checked={accesAdmin} onChange={(e) => setAccesAdmin(e.target.checked)} className="mt-0.5 size-6 shrink-0 accent-anthracite" />
+                  <span className="flex flex-col gap-1">
+                    <span className="text-[14px] leading-5 font-semibold">Autoriser l'administration à lire cette demande</span>
+                    <span className="text-[12px] leading-4 text-ink-2">
+                      Par défaut, seul ton manager la lit. Si tu coches, l'administration peut aussi la lire et la traiter. Tu pourras retirer cet accès depuis la demande.
+                    </span>
+                  </span>
+                </label>
               )}
               <label className="flex min-h-11 cursor-pointer items-start gap-3 border border-line px-4 py-3 hover:bg-neutral-1">
                 <input type="checkbox" checked={confidentielle} onChange={(e) => setConfidentielle(e.target.checked)} className="mt-0.5 size-6 shrink-0 accent-anthracite" />

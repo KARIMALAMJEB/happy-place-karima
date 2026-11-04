@@ -31,6 +31,7 @@ export type RequestRow = {
   theme: string | null;
   confidential_identity: boolean;
   validator_type: "manager" | "admin" | null;
+  admin_access?: boolean;
   follow_up: FollowUp | null;
   responsible: string | null;
   target_date: string | null;
@@ -103,6 +104,7 @@ export type NewRequest = {
   theme: Theme | null;
   confidential_identity: boolean;
   validator_type: "manager" | "admin";
+  admin_access?: boolean;
 };
 
 export const MAX_PIECES_DEPOT = 3;
@@ -138,6 +140,12 @@ export async function createRequest(input: NewRequest, files: File[] = []) {
     attachment_name: pieces[0]?.name ?? null,
     attachments: pieces,
   });
+  if (error) throw error;
+}
+
+// L'auteur ouvre ou retire l'accès de l'administration à une demande destinée à son manager
+export async function setAdminAccess(id: string, value: boolean) {
+  const { error } = await sb.rpc("set_submission_admin_access", { _id: id, _value: value });
   if (error) throw error;
 }
 

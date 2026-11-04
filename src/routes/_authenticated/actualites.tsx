@@ -5,7 +5,7 @@ import { useState } from "react";
 import { HpPage, useOwnProfile } from "@/components/hp/page";
 import { TabButton, TabList } from "@/components/hp/tabs";
 import { hpButtonVariants } from "@/components/hp/button";
-import { Couverture, dateSansJour, fichiersDe, imagesDe, joursDepuis, estEntreprise, tonNews } from "@/components/hp/news-shared";
+import { Couverture, datePublication, dateSansJour, fichiersDe, imagesDe, joursDepuis, estEntreprise, tonNews } from "@/components/hp/news-shared";
 import { AutoriserTab, PublicationsTab, SuiviTab, useActionsActus } from "@/components/hp/news-tabs";
 import { texteBrut } from "@/components/hp/rich-text";
 import { TraitStatut, type Ton } from "@/components/hp/statut";
@@ -178,7 +178,7 @@ function Carte({ n }: { n: News }) {
             {(n.author_role || n.author_team) && <span> · {[n.author_role, n.author_team].filter(Boolean).join(" · ")}</span>}
           </p>
           <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span>Publié le {dateSansJour(n.created_at)}</span>
+            <span>Publié le {dateSansJour(datePublication(n))}</span>
             {n.body && (
               <span className="inline-flex items-center gap-1"><Clock size={12} aria-hidden />{lecture(n)} min de lecture</span>
             )}
@@ -203,7 +203,7 @@ function Fil({ news, loading, error, redacteur }: { news: News[]; loading: boole
   const [panneau, setPanneau] = useState(false);
   const [filtres, setFiltres] = useState<Filtres>({});
 
-  const publiees = [...news].filter((n) => n.status === "publiée").sort((a, b) => b.created_at.localeCompare(a.created_at));
+  const publiees = [...news].filter((n) => n.status === "publiée").sort((a, b) => datePublication(b).localeCompare(datePublication(a)));
   const equipe = publiees.filter((n) => !estEntreprise(n));
   const entreprise = publiees.filter(estEntreprise);
   const base = onglet === "equipe" ? equipe : onglet === "entreprise" ? entreprise : publiees;
@@ -214,7 +214,7 @@ function Fil({ news, loading, error, redacteur }: { news: News[]; loading: boole
       (!filtres.auteur || n.author === filtres.auteur) &&
       (!filtres.equipe || equipesDe(n).includes(filtres.equipe)) &&
       (!filtres.theme || n.category === filtres.theme) &&
-      (!filtres.date || joursDepuis(n.created_at) <= Number(filtres.date)),
+      (!filtres.date || joursDepuis(datePublication(n)) <= Number(filtres.date)),
   );
   const options = {
     auteur: [...new Set(base.map((n) => n.author))],

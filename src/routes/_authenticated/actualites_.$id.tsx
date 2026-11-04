@@ -6,6 +6,7 @@ import { hpButtonVariants } from "@/components/hp/button";
 import { RichText } from "@/components/hp/rich-text";
 import { Couverture, fichiersDe, imagesDe, libellePerimetre, estEntreprise, signature } from "@/components/hp/news-shared";
 import { fetchNews } from "@/lib/dashboard";
+import { NewsAvis } from "@/components/hp/news-avis";
 import { openNewsFile, tailleFichier, linkDisplay, type NewsLink } from "@/lib/news-media";
 
 export const Route = createFileRoute("/_authenticated/actualites_/$id")({
@@ -116,6 +117,7 @@ function Lecture() {
             </ul>
           </div>
         )}
+        {a.status === "publiée" && <NewsAvis newsId={a.id} />}
         <p className="flex items-center gap-2 border-t border-line bg-neutral-1 px-8 py-4 text-[14px] leading-5">
           <Icone size={16} aria-hidden />
           Visible par : <span className="font-semibold">{libellePerimetre(a)}</span>

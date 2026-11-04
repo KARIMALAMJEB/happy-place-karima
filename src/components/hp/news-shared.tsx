@@ -20,7 +20,9 @@ export const libellePerimetre = (n: News) =>
 // Photos (3 maximum, la première = couverture) et fichiers joints (4 maximum)
 export const imagesDe = (n: News): string[] => (n.image_paths && n.image_paths.length ? n.image_paths : n.image_path ? [n.image_path] : []);
 export const fichiersDe = (n: News): NewsFile[] => (Array.isArray(n.attachments) ? (n.attachments as NewsFile[]) : []);
-export const signature = (n: News) => `Par ${n.author} · Publié le ${dateSansJour(n.created_at)}`;
+// Date de publication : posée par la base au passage en « publiée » (vide pour un brouillon)
+export const datePublication = (n: News) => n.published_at ?? n.created_at;
+export const signature = (n: News) => `Par ${n.author} · Publié le ${dateSansJour(datePublication(n))}`;
 
 const STATUTS: Record<string, { libelle: string; ton: Ton }> = {
   brouillon: { libelle: "BROUILLON", ton: "gris" },

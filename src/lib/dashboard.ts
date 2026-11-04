@@ -18,6 +18,7 @@ export type News = {
   author_team?: string | null;
   status: string;
   created_at: string;
+  published_at?: string | null;
   image_path?: string | null;
   links?: unknown;
   scope?: "entreprise" | "equipes";

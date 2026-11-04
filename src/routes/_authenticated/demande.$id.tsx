@@ -23,6 +23,7 @@ import {
   nonLue,
   questionsOf,
   decideRequest,
+  setAdminAccess,
   fetchRequest,
   refOf,
   stateOf,
@@ -122,6 +123,15 @@ function DemandeDetail() {
 
   const refresh = () => qc.invalidateQueries({ queryKey: ["requests"] });
   const onError = (e: unknown) => toast.error(e instanceof Error ? e.message : "L'action a échoué");
+
+  const accesAdmin = useMutation({
+    mutationFn: (v: boolean) => setAdminAccess(id, v),
+    onSuccess: (_x, v) => {
+      toast.success(v ? "L'administration peut lire cette demande" : "L'accès de l'administration est retiré");
+      refresh();
+    },
+    onError,
+  });
 
   const decider = useMutation({
     mutationFn: (d: Decision) => decideRequest(id, d),
@@ -297,6 +307,18 @@ function DemandeDetail() {
             <div className="flex flex-col gap-1 text-[14px] leading-5">
               <p>Visible par : <span className="font-semibold">{VISIBILITY_LABEL[r.visibility].replace("Visible par ", "").replace(/^./, (c) => c.toUpperCase())}</span></p>
               <p className="text-ink-2">{r.decided_at ? `Communiquée le ${dateHeure(r.decided_at)}` : "Pas encore communiquée"}</p>
+              {estAuteur && r.validator_type === "manager" && (
+                <label className="mt-2 flex min-h-11 cursor-pointer items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={!!r.admin_access}
+                    disabled={accesAdmin.isPending}
+                    onChange={(e) => accesAdmin.mutate(e.target.checked)}
+                    className="mt-0.5 size-6 shrink-0 accent-anthracite"
+                  />
+                  <span>L'administration peut lire cette demande</span>
+                </label>
+              )}
             </div>
           </div>
         </Bloc>

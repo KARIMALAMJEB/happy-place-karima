@@ -182,7 +182,7 @@ function derniereAction(a: News) {
   switch (a.status) {
     case "en attente": return `Demandée le ${dateCourte(a.requested_at ?? a.created_at)}`;
     case "autorisée": return `Autorisée le ${dateCourte(a.authorized_at)} par ${a.authorized_by ?? "un admin"}`;
-    case "publiée": return `Publiée le ${dateCourte(a.created_at)}`;
+    case "publiée": return `Publiée le ${dateCourte(a.published_at ?? a.created_at)}`;
     case "refusée": return "Refusée";
     default: return `Modifiée le ${dateCourte(a.created_at)}`;
   }
