@@ -29,11 +29,12 @@ function BarreStatuts({ liste, statut, onChoisir }: { liste: RequestRow[]; statu
 }
 
 // Encadré de demandes avec onglets de statut ; un filtre de tuile actif remplace la liste par la liste filtrée
-export function BlocStatuts({ id, titre, sousTitre, liste, perspective, vide, tuile, onRetirer }: {
+export function BlocStatuts({ id, titre, sousTitre, liste, perspective, vide, tuile, onRetirer, statutInitial = "tous" }: {
   id: string; titre: string; sousTitre?: string; liste: RequestRow[]; perspective: Perspective; vide: string;
-  tuile: Tuile | null; onRetirer: () => void;
+  tuile: Tuile | null; onRetirer: () => void; statutInitial?: Statut;
 }) {
-  const [statut, setStatut] = useState<Statut>("tous");
+  // Ouvre sur l'onglet utile : « En attente » s'il y a quelque chose à décider, sinon « Toutes »
+  const [statut, setStatut] = useState<Statut>(statutInitial !== "tous" && liste.some((r) => stateOf(r) === statutInitial) ? statutInitial : "tous");
   const [q, setQ] = useState("");
   const [equipe, setEquipe] = useState("");
   const [periode, setPeriode] = useState<Periode>("");

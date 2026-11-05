@@ -26,7 +26,6 @@ function DemandesPage() {
   const equipes = useMemo(() => [...new Set((validees.data ?? []).map((r) => r.team))].sort(), [validees.data]);
   const mesL = mes.data ?? [];
   const aTraiterL = atraiter.data ?? [];
-  const decideesL = (toutes.data ?? []).filter((r) => r.status !== "en attente");
 
   const tuiles = buildTuiles(role, mesL, aTraiterL);
   const actif = tuiles.find((t) => t.id === tuile) ?? null;
@@ -61,20 +60,17 @@ function DemandesPage() {
         <div className="flex min-w-0 flex-col gap-6">
           {role !== "collaborateur" && (
             <BlocStatuts
+              key={toutes.data ? "pret" : "chargement"}
               id="a-valider"
-              titre={role === "manager" ? "Demandes à valider : mon équipe" : "Demandes à valider"}
-              liste={aTraiterL}
+              titre={role === "manager" ? "Demandes de mon équipe" : "Toutes les demandes"}
+              sousTitre={role === "manager" ? "Celles qui attendent ta décision s'ouvrent en premier" : "Toutes équipes ; celles qui attendent ta décision s'ouvrent en premier"}
+              liste={toutes.data ?? []}
               perspective="valideur"
-              vide="Aucune demande n'attend ta décision."
+              vide="Aucune demande pour le moment."
               tuile={pour("traiter")}
               onRetirer={retirer}
+              statutInitial="en_attente"
             />
-          )}
-          {role === "manager" && (
-            <BlocStatuts id="decidees" titre="Demandes décidées : mon équipe" liste={decideesL} perspective="valideur" vide="Aucune demande décidée pour le moment." tuile={null} onRetirer={retirer} />
-          )}
-          {role === "admin" && (
-            <BlocLecture id="toutes" titre="Toutes les demandes" sousTitre="Lecture seule, toutes équipes" liste={toutes.data ?? []} equipes={[...new Set((toutes.data ?? []).map((r) => r.team))].sort()} etats={["en_attente", "a_completer", "validee", "refusee"]} perspective="valideur" />
           )}
 
           {mes.isError ? (
