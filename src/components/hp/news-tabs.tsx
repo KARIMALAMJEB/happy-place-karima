@@ -5,6 +5,7 @@ import { Fragment, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { HpButton, HpIconButton } from "@/components/hp/button";
 import { Encadre } from "@/components/hp/encadre";
+import { BandeauFiltre } from "@/components/hp/recap";
 import { BarreFiltres, correspond, dansPeriode, equipesDe, type Periode } from "@/components/hp/filtres-liste";
 import { StatutPublication, dateCourte, fichiersDe, joursDepuis, libellePerimetre, tonNews } from "@/components/hp/news-shared";
 import { texteBrut } from "@/components/hp/rich-text";
@@ -215,7 +216,8 @@ export function SuiviTab({ toutes, miennes, initial, statutInitial }: { toutes: 
   };
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-4 gap-3">
+      <h2 className="label text-ink-2">Annonces de l'entreprise, par statut</h2>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {TUILES.map((t) => (
           <button
             key={t.filtre}
@@ -240,13 +242,18 @@ export function SuiviTab({ toutes, miennes, initial, statutInitial }: { toutes: 
           </button>
         ))}
       </div>
-      <Encadre title="Suivi des publications" compteur={`${liste.length} annonce${liste.length > 1 ? "s" : ""}`}>
+      <Encadre title="Liste des annonces" compteur={`${liste.length} annonce${liste.length > 1 ? "s" : ""}`}>
         <div className="px-6 py-4">
           <TabList label="Périmètre">
             <TabButton active={filtre !== "mes"} onClick={() => setFiltre("toutes")}>{`ANNONCES ENTREPRISE (${n("toutes")})`}</TabButton>
             <TabButton active={filtre === "mes"} onClick={() => setFiltre("mes")}>{`MES PUBLICATIONS (${n("mes")})`}</TabButton>
           </TabList>
         </div>
+        {filtre !== "toutes" && filtre !== "mes" && (
+          <div className="border-t border-line px-6 py-3">
+            <BandeauFiltre label={TUILES.find((t) => t.filtre === filtre)?.label ?? ""} n={liste.length} onRetirer={() => setFiltre("toutes")} />
+          </div>
+        )}
         {source.length > 0 && (
           <div className="border-t border-line px-6 py-3">
             <BarreFiltres

@@ -88,13 +88,7 @@ function Page() {
         { id: "autorisee", label: "Autorisées à publier", n: n("autorisée"), ton: tonNews("autorisée"), statut: "autorisée", onglet: "mes" },
         { id: "publiee", label: "Publiées", n: n("publiée"), ton: tonNews("publiée"), statut: "publiée", onglet: "mes" },
       ]
-    : admin
-      ? [
-          { id: "brouillon", label: "Mes brouillons", n: n("brouillon"), ton: tonNews("brouillon"), statut: "brouillon", onglet: "suivi" },
-          { id: "autoriser", label: "À autoriser", n: enAttente.length, ton: tonNews("en attente"), onglet: "autoriser" },
-          { id: "publiee", label: "Mes publications publiées", n: n("publiée"), ton: tonNews("publiée"), statut: "publiée", onglet: "suivi" },
-        ]
-      : [];
+    : []; // Admin : pas de second jeu de tuiles. Les statuts de l'entreprise sont dans « Suivi des publications », « Mes publications » est un sous-onglet.
   const onglets: [OngletActus, string][] = admin
     ? [["fil", "FIL D'ACTUALITÉS"], ["autoriser", `À AUTORISER (${enAttente.length})`], ["suivi", "SUIVI DES PUBLICATIONS"]]
     : manager
