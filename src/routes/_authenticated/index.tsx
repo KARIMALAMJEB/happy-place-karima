@@ -133,6 +133,13 @@ function Accueil() {
           </ul>
         </nav>
 
+        <div className="grid grid-cols-[minmax(0,1fr)] items-stretch gap-6 lg:grid-cols-3">
+          <Carrousel className="lg:col-span-2" news={publiees} loading={news.isLoading} error={news.isError} equipe={team} />
+          <Indicateurs metrics={metrics.data} error={metrics.isError} />
+        </div>
+
+        <BlocStatuts id="mes-demandes" titre="Mes demandes" liste={mesL} perspective="auteur" vide="Tu n'as pas encore déposé de demande." tuile={actif && actif.onglet === "mes" ? actif : null} onRetirer={() => setTuile(null)} />
+
         {peutRediger && (
           <BlocStatuts
             id="a-valider"
@@ -144,13 +151,6 @@ function Accueil() {
             onRetirer={() => setTuile(null)}
           />
         )}
-
-        <div className="grid grid-cols-[minmax(0,1fr)] items-stretch gap-6 lg:grid-cols-3">
-          <Carrousel className="lg:col-span-2" news={publiees} loading={news.isLoading} error={news.isError} equipe={team} />
-          <Indicateurs metrics={metrics.data} error={metrics.isError} />
-        </div>
-
-        <BlocStatuts id="mes-demandes" titre="Mes demandes" liste={mesL} perspective="auteur" vide="Tu n'as pas encore déposé de demande." tuile={actif && actif.onglet === "mes" ? actif : null} onRetirer={() => setTuile(null)} />
 
 
         {role === "admin" ? (
