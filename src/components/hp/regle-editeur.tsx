@@ -25,7 +25,7 @@ export function RegleEditeur() {
   });
 
   return (
-    <Encadre icon={ScrollText} title="Règle de publication" subtitle="Le texte que voient les managers quand ils rédigent une actualité">
+    <Encadre icon={ScrollText} title="Règle de publication" subtitle="Le texte que voient les managers quand ils rédigent une actualité" ouvertParDefaut={false}>
       <div className="grid gap-6 p-6 lg:grid-cols-2">
         <div className="flex flex-col gap-2">
           <label htmlFor="regle-texte" className="label text-ink-2">TEXTE DE LA RÈGLE</label>

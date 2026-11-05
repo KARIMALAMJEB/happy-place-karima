@@ -22,9 +22,11 @@ function I({ name, className = "" }: { name: string; className?: string }) {
   return <Icone aria-hidden size={px ? Number(px) : 16} className={className.replace(/text-\[\d+px\]/, "").trim()} />;
 }
 
-export function NewsImage({ path, alt, className = "" }: { path: string; alt: string; className?: string }) {
+export function NewsImage({ path, alt, className = "", compact = false }: { path: string; alt: string; className?: string; compact?: boolean }) {
   const q = useQuery({ queryKey: ["news-image", path], queryFn: () => signedNewsImageUrl(path), staleTime: 50 * 60 * 1000, retry: false });
   if (!q.data) return null;
+  // Vignette de liste (gestion des données) : 64 px, pour garder une liste courte
+  if (compact) return <img src={q.data} alt={alt} className={`size-16 shrink-0 object-cover border border-line ${className}`} />;
   return <img src={q.data} alt={alt} className={`w-full max-h-60 object-cover border border-line ${className}`} />;
 }
 

@@ -48,6 +48,9 @@ export const Route = createFileRoute("/_authenticated/manage/news")({
 
 const newsStatusLabels: Record<string, string> = {
   brouillon: "Brouillon",
+  "en attente": "En attente",
+  autorisée: "Autorisée",
+  refusée: "Refusée",
   publiée: "Publiée",
 };
 
@@ -147,6 +150,9 @@ function ManageNews() {
               <select aria-label="Filtrer par statut" value={fStatut} onChange={(e) => setFStatut(e.target.value)} className="min-h-11 border border-field bg-white px-3 text-[14px] leading-5 text-ink">
                 <option value="">Tous les statuts</option>
                 <option value="brouillon">Brouillon</option>
+                <option value="en attente">En attente</option>
+                <option value="autorisée">Autorisée</option>
+                <option value="refusée">Refusée</option>
                 <option value="publiée">Publiée</option>
               </select>
             </BarreFiltres>
@@ -178,8 +184,9 @@ function ManageNews() {
           {visibles.map((n) => (
             <article key={n.id} className="relative flex min-w-0 flex-col items-start justify-between gap-4 overflow-hidden py-4 pr-6 pl-7 sm:flex-row">
               <TraitStatut ton={tonDeStatut(n.status)} />
-              <div className="min-w-0 flex-1 space-y-2">
-                {n.image_path && <NewsImage path={n.image_path} alt={n.title} />}
+              <div className="flex min-w-0 flex-1 items-start gap-4">
+                {n.image_path && <NewsImage path={n.image_path} alt={n.title} compact />}
+                <div className="min-w-0 flex-1 space-y-2">
                 <p className="text-[14px] leading-5 font-bold text-ink wrap-anywhere">{n.title}</p>
                 <p className="line-clamp-2 text-[14px] leading-5 text-ink-2 wrap-anywhere">{n.body}</p>
                 <NewsLinks links={n.links} />
@@ -187,6 +194,7 @@ function ManageNews() {
                   <span aria-hidden className="size-2.5 shrink-0" style={{ backgroundColor: POINTS[tonDeStatut(n.status)] }} />
                   {(newsStatusLabels[n.status] ?? n.status).toUpperCase()} · {n.author}{n.author_team ? ` · ${n.author_team}` : ""} · {timeAgo(n.created_at)}
                 </p>
+              </div>
               </div>
               <RowActions
                 onEdit={() => {
