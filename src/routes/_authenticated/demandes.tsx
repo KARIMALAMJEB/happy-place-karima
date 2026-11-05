@@ -83,7 +83,7 @@ function DemandesPage() {
             <BlocStatuts id="mes-demandes" titre="Mes demandes" liste={mesL} perspective="auteur" vide="Aucune demande dans ce statut." tuile={pour("mes")} onRetirer={retirer} />
           )}
 
-          <BlocLecture id="demandes-visibles" titre="Demandes visibles par tous" sousTitre="Lecture seule ; l'auteur d'une demande confidentielle est masqué" liste={validees.data ?? []} equipes={equipes} etats={["en_attente", "validee"]} perspective="lecteur" chargement={validees.isLoading} />
+          <BlocLecture id="demandes-visibles" titre="Demandes visibles par tous" sousTitre="Lecture seule ; l'auteur d'une demande confidentielle est masqué" liste={validees.data ?? []} equipes={equipes} etats={["en_attente", "validee"]} perspective="lecteur" chargement={validees.isLoading} ouvertParDefaut={false} />
         </div>
         <ReglesArbitrage />
       </div>

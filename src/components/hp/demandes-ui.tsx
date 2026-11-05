@@ -66,6 +66,7 @@ function Ligne({ r, perspective }: { r: RequestRow; perspective: Perspective }) 
   return (
     <div
       role="row"
+      title={nl ? "Nouvelle réponse : une décision est arrivée et tu ne l'as pas encore ouverte" : undefined}
       className={cn(
         GRILLE,
         "relative min-h-16 items-center border-t border-line py-2 pr-4 pl-6",
@@ -113,7 +114,16 @@ function Ligne({ r, perspective }: { r: RequestRow; perspective: Perspective }) 
 }
 
 export function Tableau({ lignes, perspective, vide }: { lignes: RequestRow[]; perspective: Perspective; vide: string }) {
+  const nonLues = perspective === "auteur" ? lignes.filter(nonLue).length : 0;
   return (
+    <>
+      {nonLues > 0 && (
+        <p role="note" className="flex min-w-0 items-center gap-2 border-t border-line bg-[#FBF1E4] px-6 py-2 text-[14px] leading-5">
+          <span aria-hidden className="size-2 shrink-0 rounded-full bg-anthracite" />
+          Fond ambré et « Nouvelle réponse » :{" "}
+          {nonLues > 1 ? `${nonLues} décisions sont arrivées et tu ne les as pas encore ouvertes` : "une décision est arrivée et tu ne l'as pas encore ouverte"}. Ouvre la demande pour la marquer comme lue.
+        </p>
+      )}
     <div role="table" aria-label="Demandes" className="@container flex flex-col overflow-x-auto">
       <div role="row" className={cn(GRILLE, "label min-h-11 items-center border-t border-line bg-neutral-1 pr-4 pl-6 text-ink-2")}>
         <span role="columnheader">Demande</span>
@@ -128,6 +138,7 @@ export function Tableau({ lignes, perspective, vide }: { lignes: RequestRow[]; p
         lignes.map((r) => <Ligne key={r.id} r={r} perspective={perspective} />)
       )}
     </div>
+    </>
   );
 }
 

@@ -114,8 +114,8 @@ function Pagination({ page, pages, total, onPage }: { page: number; pages: numbe
 }
 
 // Demandes en lecture seule (visibles par tous, ou toutes pour l'admin) : filtres équipe, nature, statut ; 5 par page
-export function BlocLecture({ id, titre, sousTitre, liste, equipes, etats, perspective, chargement }: {
-  id: string; titre: string; sousTitre: string; liste: RequestRow[]; equipes: string[]; etats: RequestState[]; perspective: Perspective; chargement?: boolean;
+export function BlocLecture({ id, titre, sousTitre, liste, equipes, etats, perspective, chargement, ouvertParDefaut = true }: {
+  id: string; titre: string; sousTitre: string; liste: RequestRow[]; equipes: string[]; etats: RequestState[]; perspective: Perspective; chargement?: boolean; ouvertParDefaut?: boolean;
 }) {
   const [equipe, setEquipe] = useState("");
   const [nature, setNature] = useState("");
@@ -144,6 +144,7 @@ export function BlocLecture({ id, titre, sousTitre, liste, equipes, etats, persp
       title={titre}
       subtitle={sousTitre}
       compteur={`${filtrees.length} sur ${liste.length}`}
+      ouvertParDefaut={ouvertParDefaut}
       filtre={
         <>
           <input
