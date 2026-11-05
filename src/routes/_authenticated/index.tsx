@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  BookOpen, ChevronLeft, ChevronRight, ClipboardList, Download, FileText, Image as ImageIcon,
+  BookOpen, ChevronLeft, ChevronRight, ClipboardList, FileText, Image as ImageIcon,
   ArrowRight, Contact, Lightbulb, Newspaper, Pause, PenLine, Play, Plus, Send, TrendingUp, Wrench,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -10,6 +10,7 @@ import { DepartureNotices } from "@/components/departure-notices";
 import { HpButton } from "@/components/hp/button";
 import { BlocLecture, BlocStatuts } from "@/components/hp/demandes-blocs";
 import { Encadre, Picto } from "@/components/hp/encadre";
+import { ExportRapport } from "@/components/hp/export-rapport";
 import { HpPage, useOwnProfile } from "@/components/hp/page";
 import { RecapTuiles, buildTuiles } from "@/components/hp/recap";
 import { MetricTile, derniereMajPar, texteMaj } from "@/components/hp/indicateurs";
@@ -17,7 +18,7 @@ import { Couverture, dateCourte, estEntreprise, imagesDe, libellePerimetre, sign
 import { TraitStatut } from "@/components/hp/statut";
 import { TabButton, TabList } from "@/components/hp/tabs";
 import {
-  deleteDraftNews, exportMyRecentSubmissions, fetchMetrics, fetchMetricsHistory, fetchNews,
+  deleteDraftNews, fetchMetrics, fetchMetricsHistory, fetchNews,
   publishDraftNews, requestNewsAuthorization, type News,
 } from "@/lib/dashboard";
 import { fetchAllRequests, fetchMyRequests, fetchToReview, fetchValidatedRequests } from "@/lib/requests";
@@ -61,12 +62,6 @@ function Accueil() {
   const [tuile, setTuile] = useState<string | null>(null);
   const actif = tuiles.find((t) => t.id === tuile) ?? null;
 
-  const exportReport = useMutation({
-    mutationFn: () => exportMyRecentSubmissions(myEmail),
-    onSuccess: (n) => (n === 0 ? toast.info("Aucune demande en attente ou validée sur les 30 derniers jours.") : toast.success(`${n} demande${n > 1 ? "s" : ""} exportée${n > 1 ? "s" : ""} au format CSV.`)),
-    onError,
-  });
-
   const publier = useMutation({
     mutationFn: publishDraftNews,
     onSuccess: () => { toast.success("Actualité publiée"); qc.invalidateQueries({ queryKey: ["news"] }); },
@@ -107,9 +102,7 @@ function Accueil() {
               <Link to="/deposer" className="contents">
                 <HpButton role="publie" icon={Plus}>DÉPOSER UNE DEMANDE OU UNE IDÉE</HpButton>
               </Link>
-              <HpButton role="consulte" icon={Download} disabled={exportReport.isPending} onClick={() => exportReport.mutate()}>
-                {exportReport.isPending ? "EXPORT EN COURS…" : "EXPORTER LE RAPPORT"}
-              </HpButton>
+              <ExportRapport role={role} email={myEmail} />
             </div>
           </div>
           <RecapTuiles tuiles={tuiles} actif={tuile} onChoisir={(t) => {
