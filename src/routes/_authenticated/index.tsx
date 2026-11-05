@@ -21,7 +21,7 @@ import {
   deleteDraftNews, fetchMetrics, fetchMetricsHistory, fetchNews,
   publishDraftNews, requestNewsAuthorization, type News,
 } from "@/lib/dashboard";
-import { fetchAllRequests, fetchMyRequests, fetchToReview, fetchValidatedRequests } from "@/lib/requests";
+import { SUIVI_LIVE, fetchAllRequests, fetchMyRequests, fetchToReview, fetchValidatedRequests } from "@/lib/requests";
 import { BOITE_A_OUTILS, ICONES_OUTILS } from "@/lib/outils";
 import { cn } from "@/lib/utils";
 
@@ -49,10 +49,10 @@ function Accueil() {
   const roleLabel = role === "admin" ? "ADMIN" : role === "manager" ? "MANAGER" : "COLLABORATEUR";
   const onError = (e: unknown) => toast.error(e instanceof Error ? e.message : "L'action a échoué");
 
-  const mes = useQuery({ queryKey: ["requests", "mine", myEmail], enabled: !!myEmail, queryFn: () => fetchMyRequests(myEmail) });
-  const atraiter = useQuery({ queryKey: ["requests", "review"], enabled: peutRediger, queryFn: fetchToReview });
-  const toutes = useQuery({ queryKey: ["requests", "all"], enabled: role === "admin", queryFn: fetchAllRequests });
-  const validees = useQuery({ queryKey: ["requests", "validated"], queryFn: fetchValidatedRequests });
+  const mes = useQuery({ queryKey: ["requests", "mine", myEmail], enabled: !!myEmail, ...SUIVI_LIVE, queryFn: () => fetchMyRequests(myEmail) });
+  const atraiter = useQuery({ queryKey: ["requests", "review"], enabled: peutRediger, ...SUIVI_LIVE, queryFn: fetchToReview });
+  const toutes = useQuery({ queryKey: ["requests", "all"], enabled: peutRediger, ...SUIVI_LIVE, queryFn: fetchAllRequests });
+  const validees = useQuery({ queryKey: ["requests", "validated"], ...SUIVI_LIVE, queryFn: fetchValidatedRequests });
   const news = useQuery({ queryKey: ["news"], queryFn: fetchNews, retry: false });
   const metrics = useQuery({ queryKey: ["metrics"], queryFn: fetchMetrics, retry: false });
 
@@ -143,19 +143,20 @@ function Accueil() {
         {peutRediger && (
           <BlocStatuts
             id="a-valider"
-            titre={role === "manager" ? "Demandes à valider : mon équipe" : "Demandes entreprise à valider"}
-            liste={aTraiterL}
+            key={toutes.data ? "pret" : "chargement"}
+            titre={role === "manager" ? "Demandes de mon équipe" : "Toutes les demandes"}
+            sousTitre="Celles qui attendent ta décision s'ouvrent en premier"
+            liste={toutes.data ?? []}
             perspective="valideur"
-            vide="Aucune demande n'attend ta décision."
+            vide="Aucune demande pour le moment."
             tuile={actif && actif.onglet === "traiter" ? actif : null}
             onRetirer={() => setTuile(null)}
+            statutInitial="en_attente"
           />
         )}
 
 
-        {role === "admin" ? (
-          <BlocLecture id="entreprise" titre="Toutes les demandes" sousTitre="Lecture seule, toutes équipes" liste={toutes.data ?? []} equipes={[...new Set((toutes.data ?? []).map((r) => r.team))].sort()} etats={["en_attente", "a_completer", "validee", "refusee"]} perspective="valideur" ouvertParDefaut={false} />
-        ) : (
+        {role === "admin" ? null : (
           <BlocLecture
             id="entreprise"
             titre={role === "manager" ? "Demandes de l'entreprise" : "Demandes visibles par tous"}

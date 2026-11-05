@@ -7,7 +7,7 @@ import { HpButton } from "@/components/hp/button";
 import { HpPage, useOwnProfile } from "@/components/hp/page";
 import { ReglesArbitrage } from "@/components/hp/regles";
 import { RecapTuiles, buildTuiles, type Onglet } from "@/components/hp/recap";
-import { fetchMyRequests, fetchAllRequests, fetchToReview, fetchValidatedRequests } from "@/lib/requests";
+import { SUIVI_LIVE, fetchMyRequests, fetchAllRequests, fetchToReview, fetchValidatedRequests } from "@/lib/requests";
 
 export const Route = createFileRoute("/_authenticated/demandes")({
   head: () => ({ meta: [{ title: "Demandes — Happy Place" }] }),
@@ -18,10 +18,10 @@ function DemandesPage() {
   const { email } = useOwnProfile();
   const { role } = Route.useRouteContext();
   const [tuile, setTuile] = useState<string | null>(null);
-  const mes = useQuery({ queryKey: ["requests", "mine", email], enabled: !!email, queryFn: () => fetchMyRequests(email) });
-  const atraiter = useQuery({ queryKey: ["requests", "review"], enabled: role !== "collaborateur", queryFn: fetchToReview });
-  const validees = useQuery({ queryKey: ["requests", "validated"], queryFn: fetchValidatedRequests });
-  const toutes = useQuery({ queryKey: ["requests", "all"], enabled: role !== "collaborateur", queryFn: fetchAllRequests });
+  const mes = useQuery({ queryKey: ["requests", "mine", email], enabled: !!email, ...SUIVI_LIVE, queryFn: () => fetchMyRequests(email) });
+  const atraiter = useQuery({ queryKey: ["requests", "review"], enabled: role !== "collaborateur", ...SUIVI_LIVE, queryFn: fetchToReview });
+  const validees = useQuery({ queryKey: ["requests", "validated"], ...SUIVI_LIVE, queryFn: fetchValidatedRequests });
+  const toutes = useQuery({ queryKey: ["requests", "all"], enabled: role !== "collaborateur", ...SUIVI_LIVE, queryFn: fetchAllRequests });
 
   const equipes = useMemo(() => [...new Set((validees.data ?? []).map((r) => r.team))].sort(), [validees.data]);
   const mesL = mes.data ?? [];

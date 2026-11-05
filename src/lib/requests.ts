@@ -261,3 +261,6 @@ export async function markSeen(id: string) {
 
 export const nonLue = (r: Pick<RequestRow, "decided_at" | "author_seen_at">) =>
   !!r.decided_at && (!r.author_seen_at || new Date(r.author_seen_at) < new Date(r.decided_at));
+
+// Les listes de demandes se mettent à jour seules (décision d'un manager, réponse d'un auteur) sans recharger la page
+export const SUIVI_LIVE = { refetchInterval: 10_000, refetchOnWindowFocus: true } as const;

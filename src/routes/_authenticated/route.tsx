@@ -7,10 +7,10 @@ import { fetchOwnRole } from "@/lib/auth";
 // (adresse interne @happyplace.test) reste envoyée vers /choisir-role, jusqu'au retrait de ce mode.
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
-  beforeLoad: async () => {
+  beforeLoad: async ({ location }) => {
     try {
       const { data, error } = await supabase.auth.getUser();
-      if (error || !data.user) throw redirect({ to: "/auth" });
+      if (error || !data.user) throw redirect({ to: "/auth", search: { redirect: location.href } });
       const email = data.user.email ?? "";
       const role = email ? await fetchOwnRole(email) : null;
       if (!role) {
@@ -23,7 +23,7 @@ export const Route = createFileRoute("/_authenticated")({
       if (isRedirect(e)) throw e;
       // Session périmée ou compte changé dans un autre onglet : retour propre à la connexion.
       await supabase.auth.signOut({ scope: "local" }).catch(() => {});
-      throw redirect({ to: "/auth" });
+      throw redirect({ to: "/auth", search: { redirect: location.href } });
     }
   },
   component: () => <Outlet />,

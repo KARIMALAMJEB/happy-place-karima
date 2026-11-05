@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Eye, EyeOff, LogIn, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,7 +10,11 @@ import { HpButton } from "@/components/hp/button";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
-  validateSearch: (s: Record<string, unknown>): { refus?: boolean } => ({ refus: s.refus === true || s.refus === "1" || s.refus === 1 ? true : undefined }),
+  validateSearch: (s: Record<string, unknown>): { refus?: boolean; redirect?: string } => ({
+    refus: s.refus === true || s.refus === "1" || s.refus === 1 ? true : undefined,
+    // Page demandée avant la connexion (ex. lien d'un e-mail) : uniquement un chemin interne
+    redirect: typeof s.redirect === "string" && s.redirect.startsWith("/") && !s.redirect.startsWith("//") && !s.redirect.startsWith("/auth") ? s.redirect : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Happy Place — Connexion" },
@@ -23,8 +27,9 @@ export const Route = createFileRoute("/auth")({
 const champ = "min-h-11 w-full border border-field bg-white px-3 text-[14px] leading-5 text-ink";
 
 function Connexion() {
-  const navigate = useNavigate();
-  const { refus } = Route.useSearch();
+  const router = useRouter();
+  const { refus, redirect } = Route.useSearch();
+  const aller = () => router.history.push(redirect ?? "/");
   const [email, setEmail] = useState("");
   const [mdp, setMdp] = useState("");
   const [voir, setVoir] = useState(false);
@@ -36,16 +41,17 @@ function Connexion() {
   useEffect(() => {
     let annule = false;
     supabase.auth.getSession().then(({ data }) => {
-      if (!annule && data.session && !refus) navigate({ to: "/" });
+      if (!annule && data.session && !refus) aller();
     });
     const { data: sub } = supabase.auth.onAuthStateChange((evt, session) => {
-      if (evt === "SIGNED_IN" && session && !refus) navigate({ to: "/" });
+      if (evt === "SIGNED_IN" && session && !refus) aller();
     });
     return () => {
       annule = true;
       sub.subscription.unsubscribe();
     };
-  }, [navigate, refus]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refus, redirect]);
 
   async function connecter(e: React.FormEvent) {
     e.preventDefault();
@@ -56,7 +62,7 @@ function Connexion() {
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password: mdp });
     setEnvoi(false);
     if (error) return setErreur("E-mail ou mot de passe incorrect.");
-    navigate({ to: "/" });
+    aller();
   }
 
   async function lienMagique() {
@@ -66,7 +72,7 @@ function Connexion() {
     setEnvoi(true);
     const { error } = await supabase.auth.signInWithOtp({
       email: email.trim().toLowerCase(),
-      options: { shouldCreateUser: false, emailRedirectTo: `${window.location.origin}/auth` },
+      options: { shouldCreateUser: false, emailRedirectTo: `${window.location.origin}/auth${redirect ? `?redirect=${encodeURIComponent(redirect)}` : ""}` },
     });
     setEnvoi(false);
     // Même message dans tous les cas : on ne révèle pas si une adresse est connue
