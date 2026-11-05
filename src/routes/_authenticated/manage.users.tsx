@@ -599,19 +599,8 @@ function TeamsSection({ users, teams, onChanged }: { users: Row[]; teams: { name
   }
   const lien = "inline-flex h-9 cursor-pointer items-center px-1 text-[14px] leading-5 font-semibold underline underline-offset-4 hover:text-ink disabled:opacity-50";
 
-  return (
-    <Encadre icon={Layers} title="Équipes" subtitle="Les équipes du cabinet : chaque collaborateur et chaque manager en a une" compteur={`${teams.length} équipe${teams.length > 1 ? "s" : ""}`}>
-      <form onSubmit={submit} className="flex flex-wrap items-start gap-3 border-b border-line px-6 py-4">
-        <div>
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nom de la nouvelle équipe" aria-label="Nouvelle équipe" maxLength={60}
-            className="min-h-11 w-[280px] max-w-full border border-field bg-white px-3 text-[14px] leading-5 text-ink" />
-          {err && <p role="alert" className="mt-1 text-[12px] leading-4 font-semibold text-[#8E1A1F]">{err}</p>}
-        </div>
-        <HpButton type="submit" role="principal" icon={Plus} disabled={create.isPending}>CRÉER L'ÉQUIPE</HpButton>
-      </form>
-      <ul className="grid gap-px bg-line sm:grid-cols-2 lg:grid-cols-3">
-        {teams.map((t) => (
-          <li key={t.name} className="flex flex-col justify-between gap-3 bg-white p-4">
+  const carte = (t: (typeof teams)[number]) => (
+    <li key={t.name} className="flex flex-col justify-between gap-3 bg-white p-4">
             {editing?.from === t.name ? (
               <div className="flex flex-col gap-2">
                 <input value={editing.to} onChange={(e) => setEditing({ ...editing, to: e.target.value })} aria-label={`Nouveau nom pour ${t.name}`} maxLength={60}
@@ -643,9 +632,39 @@ function TeamsSection({ users, teams, onChanged }: { users: Row[]; teams: { name
                 )}
               </>
             )}
-          </li>
-        ))}
+    </li>
+  );
+  // Règle de publication : sans manager attitré, une équipe ne peut ni publier ni valider de demande
+  const actives = teams.filter((t) => t.is_reserved || managers(t.name) > 0);
+  const sansManager = teams.filter((t) => !t.is_reserved && managers(t.name) === 0);
+
+  return (
+    <Encadre icon={Layers} title="Équipes" subtitle="Une équipe a besoin d'un manager attitré pour publier et valider les demandes" compteur={`${actives.length} active${actives.length > 1 ? "s" : ""} · ${sansManager.length} sans manager`}>
+      <form onSubmit={submit} className="flex flex-wrap items-start gap-3 border-b border-line px-6 py-4">
+        <div>
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nom de la nouvelle équipe" aria-label="Nouvelle équipe" maxLength={60}
+            className="min-h-11 w-[280px] max-w-full border border-field bg-white px-3 text-[14px] leading-5 text-ink" />
+          {err && <p role="alert" className="mt-1 text-[12px] leading-4 font-semibold text-[#8E1A1F]">{err}</p>}
+        </div>
+        <HpButton type="submit" role="principal" icon={Plus} disabled={create.isPending}>CRÉER L'ÉQUIPE</HpButton>
+      </form>
+      <ul className="grid gap-px bg-line sm:grid-cols-2 lg:grid-cols-3">
+        {actives.map(carte)}
       </ul>
+      {sansManager.length > 0 && (
+        <details className="border-t border-line">
+          <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-3 bg-neutral-1 px-6 py-3 text-[14px] leading-5 font-semibold">
+            <span>Équipes sans manager attitré ({sansManager.length})</span>
+            <span className="text-[12px] leading-4 font-normal text-ink-2">Inactives : ni publication, ni validation</span>
+          </summary>
+          <p className="px-6 py-3 text-[14px] leading-5 text-ink-2">
+            Une équipe sans manager attitré ne peut pas publier d'actualité ni valider de demande. Nomme un manager dans « Équipes et utilisateurs », ou supprime l'équipe si elle n'est plus utilisée.
+          </p>
+          <ul className="grid gap-px bg-line sm:grid-cols-2 lg:grid-cols-3">
+            {sansManager.map(carte)}
+          </ul>
+        </details>
+      )}
     </Encadre>
   );
 }
