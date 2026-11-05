@@ -1,6 +1,6 @@
 import { Link, useRouteContext, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ClipboardList, Contact, Database, LayoutDashboard, LogOut, Menu, Newspaper, Repeat, TrendingUp, Wrench, X } from "lucide-react";
+import { ChevronRight, ClipboardList, Contact, Database, LayoutDashboard, LogOut, Menu, Newspaper, PanelLeftClose, PanelLeftOpen, Repeat, TrendingUp, Wrench, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Assistant } from "@/components/hp/assistant";
 import { RechercheGlobale } from "@/components/hp/recherche-globale";
@@ -20,6 +20,63 @@ function initiales(name: string) {
   const mots = name.replace(/@.*$/, "").split(/[\s._-]+/).filter(Boolean);
   const lettres = (mots.length > 1 ? mots[0][0] + mots[mots.length - 1][0] : (mots[0] ?? "?").slice(0, 2)).toUpperCase();
   return lettres;
+}
+
+
+// Fil d'Ariane : chemin de la page courante, avec retour à chaque niveau (absent sur le tableau de bord)
+type Chemin = "/" | "/actualites" | "/demandes" | "/indicateurs" | "/boite-a-outils" | "/annuaire" | "/manage/news" | "/manage/users" | "/manage/submissions";
+type Miette = { label: string; to?: Chemin };
+const ACCUEIL: Miette = { label: "Accueil", to: "/" };
+const ARIANE: Record<string, Miette[]> = {
+  "/actualites": [{ label: "Actualités" }],
+  "/rediger": [{ label: "Actualités", to: "/actualites" }, { label: "Rédiger une actualité" }],
+  "/demandes": [{ label: "Demandes" }],
+  "/deposer": [{ label: "Demandes", to: "/demandes" }, { label: "Déposer une demande" }],
+  "/indicateurs": [{ label: "Indicateurs" }],
+  "/boite-a-outils": [{ label: "Boîte à outils" }],
+  "/annuaire": [{ label: "Annuaire" }],
+  "/manage": [{ label: "Gestion des données" }],
+  "/manage/news": [{ label: "Gestion des données", to: "/manage/news" }, { label: "Actualités" }],
+  "/manage/users": [{ label: "Gestion des données", to: "/manage/news" }, { label: "Équipes et utilisateurs" }],
+  "/manage/submissions": [{ label: "Gestion des données", to: "/manage/news" }, { label: "Demandes" }],
+};
+function miettes(pathname: string): Miette[] {
+  const p = pathname.replace(/\/+$/, "") || "/";
+  if (p === "/") return [];
+  if (ARIANE[p]) return [ACCUEIL, ...ARIANE[p]];
+  if (p.startsWith("/actualites/")) return [ACCUEIL, { label: "Actualités", to: "/actualites" }, { label: "Détail de l'actualité" }];
+  if (p.startsWith("/boite-a-outils/")) return [ACCUEIL, { label: "Boîte à outils", to: "/boite-a-outils" }, { label: "Ressource" }];
+  if (p.startsWith("/demande/")) return [ACCUEIL, { label: "Demandes", to: "/demandes" }, { label: "Détail de la demande" }];
+  if (p.startsWith("/completer/")) return [ACCUEIL, { label: "Demandes", to: "/demandes" }, { label: "Compléter ma demande" }];
+  return [ACCUEIL];
+}
+function FilAriane() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const liste = miettes(pathname);
+  if (liste.length < 2) return null;
+  return (
+    <nav aria-label="Fil d'Ariane" className="-mb-2">
+      <ol className="flex flex-wrap items-center gap-x-1 gap-y-1 text-[14px] leading-5 text-ink-2">
+        {liste.map((m, i) => {
+          const dernier = i === liste.length - 1;
+          return (
+            <li key={`${m.label}-${i}`} className="inline-flex items-center gap-1">
+              {m.to && !dernier ? (
+                <Link to={m.to} className="inline-flex min-h-6 items-center underline underline-offset-4 hover:text-ink">
+                  {m.label}
+                </Link>
+              ) : (
+                <span aria-current={dernier ? "page" : undefined} className={dernier ? "font-semibold text-ink" : undefined}>
+                  {m.label}
+                </span>
+              )}
+              {!dernier && <ChevronRight size={14} aria-hidden />}
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
+  );
 }
 
 function SkipLink() {
@@ -70,7 +127,7 @@ function useCompteurActus(role: AppRole) {
   return { n, label: `${n} annonce${n > 1 ? "s" : ""} autorisée${n > 1 ? "s" : ""} à publier` };
 }
 
-function Sidebar({ role, ouvert, onFermer, accueil }: { role: AppRole; ouvert: boolean; onFermer: () => void; accueil: boolean }) {
+function Sidebar({ role, ouvert, onFermer, accueil, pageAccueil, onReplier, onFixer }: { role: AppRole; ouvert: boolean; onFermer: () => void; accueil: boolean; pageAccueil: boolean; onReplier: () => void; onFixer: () => void }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const actifTableau = pathname === "/";
   const compteur = useCompteurDemandes(role);
@@ -96,8 +153,10 @@ function Sidebar({ role, ouvert, onFermer, accueil }: { role: AppRole; ouvert: b
         ouvert ? "flex" : "hidden",
       )}
     >
-      <div className={cn("flex justify-end border-b border-line p-2", !accueil && "lg:hidden")}>
-        <HpIconButton icon={X} label="Fermer le menu" onClick={onFermer} />
+      <div className="flex justify-end gap-2 border-b border-line p-2">
+        {!accueil && <HpIconButton icon={PanelLeftClose} label="Replier le menu" className="hidden lg:inline-flex" onClick={onReplier} />}
+        {accueil && !pageAccueil && <HpIconButton icon={PanelLeftOpen} label="Garder le menu affiché" className="hidden lg:inline-flex" onClick={onFixer} />}
+        <HpIconButton icon={X} label="Fermer le menu" className={cn(!accueil && "lg:hidden")} onClick={onFermer} />
       </div>
       <Link to="/" className="flex h-16 flex-col justify-center border-b border-line px-5">
         <span className="label text-ink-2">BIGGER BOAT</span>
@@ -205,8 +264,27 @@ export function AppShell({ name, role, equipe, children }: { name: string; role:
   // Mobile : menu latéral en tiroir, refermé à chaque changement de page et avec Échap
   const [menu, setMenu] = useState(false);
   const chemin = useRouterState({ select: (s) => s.location.href });
-  // Sur le tableau de bord, les accès rapides font office de navigation : le menu latéral passe en tiroir
-  const accueil = useRouterState({ select: (s) => s.location.pathname === "/" });
+  // Sur le tableau de bord, les accès rapides font office de navigation : le menu latéral passe en tiroir.
+  // Sur les autres pages, le menu est fixe à gauche mais peut être replié en tiroir (choix gardé dans le navigateur).
+  const pageAccueil = useRouterState({ select: (s) => s.location.pathname === "/" });
+  const [replie, setReplie] = useState(false);
+  useEffect(() => {
+    try {
+      setReplie(localStorage.getItem("hp-menu-replie") === "1");
+    } catch {
+      /* stockage indisponible */
+    }
+  }, []);
+  const regler = (v: boolean) => {
+    setReplie(v);
+    setMenu(false);
+    try {
+      localStorage.setItem("hp-menu-replie", v ? "1" : "0");
+    } catch {
+      /* ignoré */
+    }
+  };
+  const accueil = pageAccueil || replie;
   useEffect(() => setMenu(false), [chemin]);
   useEffect(() => {
     if (!menu) return;
@@ -218,7 +296,7 @@ export function AppShell({ name, role, equipe, children }: { name: string; role:
   return (
     <div className="hp-shell min-h-screen bg-ecru">
       <SkipLink />
-      <Sidebar role={role} ouvert={menu} onFermer={() => setMenu(false)} accueil={accueil} />
+      <Sidebar role={role} ouvert={menu} onFermer={() => setMenu(false)} accueil={accueil} pageAccueil={pageAccueil} onReplier={() => regler(true)} onFixer={() => regler(false)} />
       {menu && (
         <button
           type="button"
@@ -230,7 +308,10 @@ export function AppShell({ name, role, equipe, children }: { name: string; role:
       <Header name={name} role={role} sousTitre={equipe} menuOuvert={menu} onMenu={() => setMenu(true)} accueil={accueil} />
       <div className={cn("flex min-h-screen flex-col pt-16", !accueil && "lg:pl-64")}>
         <main id="contenu" tabIndex={-1} className="flex-1 focus:outline-none">
-          <div className="mx-auto flex max-w-[1240px] flex-col gap-6 px-4 py-4 lg:px-8 lg:py-8">{children}</div>
+          <div className="mx-auto flex max-w-[1240px] flex-col gap-6 px-4 py-4 lg:px-8 lg:py-8">
+            <FilAriane />
+            {children}
+          </div>
         </main>
         <Footer />
       </div>
