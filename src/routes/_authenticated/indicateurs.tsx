@@ -97,7 +97,8 @@ function Page() {
         <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-3">
           {editable && (
             <Encadre icon={SquarePen} title="Saisie des indicateurs" className="lg:col-span-2">
-              <table className="w-full border-collapse text-left">
+              <div className="overflow-x-auto">
+              <table className="w-full min-w-[680px] border-collapse text-left">
                 <thead>
                   <tr className="border-b border-line bg-neutral-1">
                     {CHAMPS.map((c) => (
@@ -115,6 +116,7 @@ function Page() {
                           <input
                             aria-label={`${c.label} de l'indicateur ${i + 1}`}
                             value={x[c.cle]}
+                            title={x[c.cle]}
                             inputMode={c.cle === "valeur" ? "decimal" : undefined}
                             onChange={(e) => changer(i, c.cle, e.target.value)}
                             className="h-11 w-full border border-field bg-white px-3 text-[14px] text-ink"
@@ -137,6 +139,7 @@ function Page() {
                   ))}
                 </tbody>
               </table>
+              </div>
               <div className="flex px-6 py-4">
                 <HpButton role="modifie" icon={Plus} onClick={() => setBrouillon((b) => [...b, { cle: "", libelle: "", valeur: "", unite: "", publie: false }])}>AJOUTER UN INDICATEUR</HpButton>
               </div>

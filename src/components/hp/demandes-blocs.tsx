@@ -53,7 +53,7 @@ export function BlocStatuts({ id, titre, sousTitre, liste, perspective, vide, tu
   const base = tuile ? apres.filter(tuile.garde) : apres;
   const lignes = statut === "tous" ? base : base.filter((r) => stateOf(r) === statut);
   return (
-    <Encadre id={id} icon={ClipboardList} title={titre} subtitle={sousTitre} compteur={`${base.length} demande${base.length > 1 ? "s" : ""}`}>
+    <Encadre id={id} icon={ClipboardList} title={titre} subtitle={sousTitre} compteur={`${base.length} demande${base.length > 1 ? "s" : ""}`} ouvertParDefaut={liste.length > 0}>
       {tuile && (
         <div className="border-b border-line px-6 py-3">
           <BandeauFiltre label={tuile.label} n={base.length} onRetirer={onRetirer} />

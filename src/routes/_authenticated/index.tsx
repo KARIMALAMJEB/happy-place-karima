@@ -133,13 +133,6 @@ function Accueil() {
           </ul>
         </nav>
 
-        <div className="grid grid-cols-[minmax(0,1fr)] items-stretch gap-6 lg:grid-cols-3">
-          <Carrousel className="lg:col-span-2" news={publiees} loading={news.isLoading} error={news.isError} equipe={team} />
-          <Indicateurs metrics={metrics.data} error={metrics.isError} />
-        </div>
-
-        <BlocStatuts id="mes-demandes" titre="Mes demandes" liste={mesL} perspective="auteur" vide="Tu n'as pas encore déposé de demande." tuile={actif && actif.onglet === "mes" ? actif : null} onRetirer={() => setTuile(null)} />
-
         {peutRediger && (
           <BlocStatuts
             id="a-valider"
@@ -152,8 +145,16 @@ function Accueil() {
           />
         )}
 
+        <div className="grid grid-cols-[minmax(0,1fr)] items-stretch gap-6 lg:grid-cols-3">
+          <Carrousel className="lg:col-span-2" news={publiees} loading={news.isLoading} error={news.isError} equipe={team} />
+          <Indicateurs metrics={metrics.data} error={metrics.isError} />
+        </div>
+
+        <BlocStatuts id="mes-demandes" titre="Mes demandes" liste={mesL} perspective="auteur" vide="Tu n'as pas encore déposé de demande." tuile={actif && actif.onglet === "mes" ? actif : null} onRetirer={() => setTuile(null)} />
+
+
         {role === "admin" ? (
-          <BlocLecture id="entreprise" titre="Toutes les demandes" sousTitre="Lecture seule, toutes équipes" liste={toutes.data ?? []} equipes={[...new Set((toutes.data ?? []).map((r) => r.team))].sort()} etats={["en_attente", "a_completer", "validee", "refusee"]} perspective="valideur" />
+          <BlocLecture id="entreprise" titre="Toutes les demandes" sousTitre="Lecture seule, toutes équipes" liste={toutes.data ?? []} equipes={[...new Set((toutes.data ?? []).map((r) => r.team))].sort()} etats={["en_attente", "a_completer", "validee", "refusee"]} perspective="valideur" ouvertParDefaut={false} />
         ) : (
           <BlocLecture
             id="entreprise"
@@ -164,11 +165,12 @@ function Accueil() {
             etats={["en_attente", "validee"]}
             perspective="lecteur"
             chargement={validees.isLoading}
+            ouvertParDefaut={false}
           />
         )}
 
         {peutRediger && (
-          <Encadre id="brouillons" icon={FileText} title="Mes brouillons" compteur={`${brouillons.length} brouillon${brouillons.length > 1 ? "s" : ""}`}>
+          <Encadre id="brouillons" icon={FileText} title="Mes brouillons" compteur={`${brouillons.length} brouillon${brouillons.length > 1 ? "s" : ""}`} ouvertParDefaut={brouillons.length > 0}>
             {brouillons.length === 0 ? (
               <p className="px-6 py-6 text-[14px] leading-5 text-ink-2">Aucun brouillon en cours.</p>
             ) : (
